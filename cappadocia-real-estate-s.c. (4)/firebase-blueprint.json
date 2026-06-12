@@ -1,0 +1,105 @@
+{
+  "entities": {
+    "Property": {
+      "title": "Property",
+      "description": "Real estate property catalog item",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "location": { "type": "string" },
+        "subCity": { "type": "string" },
+        "type": { "type": "string" },
+        "price": { "type": "number" },
+        "areaSqm": { "type": "number" },
+        "floorsCount": { "type": "number" },
+        "unitsCount": { "type": "number" },
+        "constructionStatus": { "type": "string" },
+        "completionPercentage": { "type": "number" },
+        "status": { "type": "string" },
+        "availability": { "type": "string" },
+        "showOnHomepage": { "type": "boolean" },
+        "yearBuilt": { "type": "number" },
+        "featuredImage": { "type": "string" },
+        "galleryImages": { "type": "array" },
+        "description": { "type": "string" },
+        "amenities": { "type": "array" },
+        "videoTourUrl": { "type": "string" },
+        "mapEmbedUrl": { "type": "string" }
+      },
+      "required": ["title", "location", "type", "price", "status"]
+    },
+    "Testimonial": {
+      "title": "Testimonial",
+      "description": "Client testimonial",
+      "type": "object",
+      "properties": {
+        "clientName": { "type": "string" },
+        "rating": { "type": "number" },
+        "testimony": { "type": "string" },
+        "propertyPurchased": { "type": "string" }
+      }
+    },
+    "Blog": {
+      "title": "Blog",
+      "description": "Blog post",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string" },
+        "image": { "type": "string" },
+        "date": { "type": "string" },
+        "author": { "type": "string" }
+      }
+    },
+    "InquiryMessage": {
+      "title": "InquiryMessage",
+      "description": "Customer inquiry message",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "propertyTitle": { "type": "string" },
+        "message": { "type": "string" },
+        "date": { "type": "string" },
+        "status": { "type": "string" }
+      }
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Past project",
+      "type": "object",
+      "properties": {
+        "year": { "type": "string" },
+        "title": { "type": "string" },
+        "subCity": { "type": "string" },
+        "description": { "type": "string" },
+        "image": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "properties": {
+      "schema": { "$ref": "#/entities/Property" },
+      "description": "All properties for sale"
+    },
+    "testimonials": {
+      "schema": { "$ref": "#/entities/Testimonial" },
+      "description": "Client testimonials"
+    },
+    "blogs": {
+      "schema": { "$ref": "#/entities/Blog" },
+      "description": "Blog posts"
+    },
+    "messages": {
+      "schema": { "$ref": "#/entities/InquiryMessage" },
+      "description": "Customer support messages"
+    },
+    "projects": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Past successful projects"
+    }
+  }
+}

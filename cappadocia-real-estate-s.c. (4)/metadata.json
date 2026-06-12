@@ -1,0 +1,8 @@
+{
+  "name": "Cappadocia Real Estate S.C.",
+  "description": "High-end luxury properties and premium real estate listings in Ethiopia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
