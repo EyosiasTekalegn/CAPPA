@@ -2911,6 +2911,7 @@ export default function App() {
 
             <div className={`pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-semibold ${isDarkMode ? "border-zinc-900 text-zinc-400" : "border-zinc-300 text-zinc-500"}`}>
               <p>© {new Date().getFullYear()} Cappadocia Real Estate S.C. All rights reserved.</p>
+              <p className="text-[9px] text-zinc-400">v{import.meta.env.VITE_APP_VERSION}</p>
               <p className="flex items-center gap-1 text-zinc-500 font-sans font-black uppercase text-[9px] tracking-wider">
               </p>
             </div>
