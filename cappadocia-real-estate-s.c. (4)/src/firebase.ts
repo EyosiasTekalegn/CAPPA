@@ -2,26 +2,20 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Your web app's Firebase configuration - must be set in Vercel environment variables
+// Hardcoded Firebase configuration for cappadocia-realestate
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyA5u8u-oZq_F7XNe4R1wAmxs_uPK2g8mPk",
+  authDomain: "cappadocia-realestate.firebaseapp.com",
+  projectId: "cappadocia-realestate",
+  storageBucket: "cappadocia-realestate.firebasestorage.app",
+  messagingSenderId: "478846595771",
+  appId: "1:478846595771:web:c222c8a03463ddd3edaf9e",
 };
 
-// Ensure environment variables are set
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  console.error('Firebase environment variables are missing. Check Vercel settings.');
-} else {
-  console.log('Firebase config loaded for project:', firebaseConfig.projectId);
-}
+console.log('🔥 Firebase using project:', firebaseConfig.projectId);
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app); // 👈 No custom database ID – uses the default database
+export const db = getFirestore(app); // Uses default database
 export const auth = getAuth(app);
 
 export enum OperationType {
