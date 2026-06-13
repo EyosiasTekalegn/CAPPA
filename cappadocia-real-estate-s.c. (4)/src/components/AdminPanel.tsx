@@ -463,9 +463,7 @@ const [activeAdminTab, setActiveAdminTab] = useState<
   }, [teamMembers]);
 
   // Role Checker Helpers
-  const canEditCore = currentRole === "Owner" || currentRole === "Manager";
-  const isOwner = currentRole === "Owner";
-  const isSales = currentRole === "Sales";
+
 
   // Role names descriptions
   const getRoleDesc = (r: typeof currentRole) => {
