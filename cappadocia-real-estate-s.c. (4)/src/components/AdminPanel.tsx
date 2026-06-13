@@ -253,6 +253,11 @@ export default function AdminPanel({
 }: AdminPanelProps) {
   
   // Current logged-in role simulator (Owner is default)
+  const currentRole = loggedInUser?.role || "Sales";
+const canEditCore = currentRole === "Owner" || currentRole === "Manager";
+const isOwner = currentRole === "Owner";
+const isSales = currentRole === "Sales";
+  
 const [activeAdminTab, setActiveAdminTab] = useState<
   | "dashboard"
   | "properties"
