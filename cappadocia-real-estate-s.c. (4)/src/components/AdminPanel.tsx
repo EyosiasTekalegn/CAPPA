@@ -816,63 +816,92 @@ const isSales = currentRole === "Sales";
   };
 
   // Admin users lists
-  // Admin users lists
-  const handleSaveUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isOwner) return;
+ const handleSaveUser = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!isOwner) {
+    showAlert("Permission Denied", "Only the Owner can add or edit admin users.");
+    return;
+  }
+
+  try {
     if (editingUserId) {
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === editingUserId
-            ? {
-                ...u,
-                fullName: userFullName,
-                email: userEmail,
-                phone: userPhone,
-                password: userPassword,
-                role: userRole,
-              }
-            : u,
-        ),
+      // Update existing user (Firestore only – password change via reset email)
+      const userRef = doc(db, "users", editingUserId);
+      await setDoc(
+        userRef,
+        {
+          fullName: userFullName,
+          email: userEmail,
+          phone: userPhone,
+          role: userRole,
+        },
+        { merge: true }
       );
+      if (userPassword && userPassword.trim() !== "") {
+        await sendPasswordResetEmail(auth, userEmail);
+        showAlert("Password Reset Email Sent", `A password reset link has been sent to ${userEmail}.`);
+      }
+      showAlert("User Updated", "User information updated successfully.");
+      logActivity("auth", `User ${userFullName} (${userEmail}) updated by ${loggedInUser?.fullName}`);
     } else {
-      const newU: AdminUser = {
-        id: `usr-${Math.floor(Math.random() * 90000 + 10000)}`,
+      // Create new user: first create Auth account
+      const userCredential = await createUserWithEmailAndPassword(auth, userEmail, userPassword);
+      const uid = userCredential.user.uid;
+      const newUser: AdminUser = {
+        id: uid,
         fullName: userFullName,
         email: userEmail,
         phone: userPhone,
-        password: userPassword,
         role: userRole,
         isActive: true,
       };
-      setUsers((prev) => [...prev, newU]);
+      await setDoc(doc(db, "users", uid), newUser);
+      setUsers((prev) => [...prev, newUser]);
+      showAlert("User Created", `User ${userFullName} has been created. They can now log in.`);
+      logActivity("auth", `New user created: ${userFullName} (${userEmail}) by ${loggedInUser?.fullName}`);
     }
+    resetUserForm();
+  } catch (err: any) {
+    console.error("User save error:", err);
+    let msg = err.message;
+    if (err.code === "auth/email-already-in-use") msg = "Email already registered.";
+    else if (err.code === "auth/weak-password") msg = "Password too weak. Use at least 6 characters.";
+    showAlert("Error", msg);
+  }
+};
 
-    setIsAddingUser(false);
-    setEditingUserId(null);
-    setUserFullName("");
-    setUserEmail("");
-    setUserPhone("");
-    setUserPassword("");
-    setUserRole("Sales");
-  };
+const handleEditUser = (user: AdminUser) => {
+  if (!isOwner) return;
+  setEditingUserId(user.id);
+  setUserFullName(user.fullName);
+  setUserEmail(user.email);
+  setUserPhone(user.phone || "");
+  setUserPassword(""); // do not populate password
+  setUserRole(user.role);
+  setIsAddingUser(true);
+};
 
-  const handleEditUser = (user: AdminUser) => {
-    setEditingUserId(user.id);
-    setUserFullName(user.fullName);
-    setUserEmail(user.email);
-    setUserPhone(user.phone || "");
-    setUserPassword(user.password || "");
-    setUserRole(user.role);
-    setIsAddingUser(true);
-  };
+const handleToggleUserStatus = async (id: string) => {
+  if (!isOwner) return;
+  const user = users.find((u) => u.id === id);
+  if (!user) return;
+  const newStatus = !user.isActive;
+  await setDoc(doc(db, "users", id), { isActive: newStatus }, { merge: true });
+  setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, isActive: newStatus } : u)));
+  logActivity("auth", `User ${user.fullName} ${newStatus ? "activated" : "deactivated"} by ${loggedInUser?.fullName}`);
+  showAlert("Status Updated", `${user.fullName} is now ${newStatus ? "active" : "inactive"}.`);
+};
 
-  const handleToggleUserStatus = (id: string) => {
-    if (!isOwner) return;
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, isActive: !u.isActive } : u)),
-    );
-  };
+const resetUserForm = () => {
+  setIsAddingUser(false);
+  setEditingUserId(null);
+  setUserFullName("");
+  setUserEmail("");
+  setUserPhone("");
+  setUserPassword("");
+  setUserRole("Sales");
+};
+
 
   // Projects CRUD Handlers
   const handleSaveProjectLocal = (e: React.FormEvent) => {
