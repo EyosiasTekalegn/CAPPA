@@ -860,7 +860,28 @@ const [activeAdminTab, setActiveAdminTab] = useState<
     showAlert("Error", msg);
   }
 };
-  const resetUserForm = () => {
+  const handleEditUser = (user: AdminUser) => {
+  if (!isOwner) return;
+  setEditingUserId(user.id);
+  setUserFullName(user.fullName);
+  setUserEmail(user.email);
+  setUserPhone(user.phone || "");
+  setUserPassword(""); // do not populate password
+  setUserRole(user.role);
+  setIsAddingUser(true);
+};
+
+const handleToggleUserStatus = async (id: string) => {
+  if (!isOwner) return;
+  const user = users.find((u) => u.id === id);
+  if (!user) return;
+  const newStatus = !user.isActive;
+  await setDoc(doc(db, "users", id), { isActive: newStatus }, { merge: true });
+  setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, isActive: newStatus } : u)));
+  logActivity("auth", `User ${user.fullName} ${newStatus ? "activated" : "deactivated"} by ${loggedInUser?.fullName}`);
+  showAlert("Status Updated", `${user.fullName} is now ${newStatus ? "active" : "inactive"}.`);
+};
+ const resetUserForm = () => {
   setIsAddingUser(false);
   setEditingUserId(null);
   setUserFullName("");
