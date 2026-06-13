@@ -47,8 +47,17 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { ImageInput } from "./ImageInput";
+// Add these lines near the top, after the existing imports
+import { auth, db } from "../firebase";
+import {
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
 
 interface AdminPanelProps {
+  loggedInUser: AdminUser | null;
   properties: Property[];
   setProperties: React.Dispatch<React.SetStateAction<Property[]>>;
   testimonials: Testimonial[];
@@ -236,6 +245,7 @@ export default function AdminPanel({
   isDarkMode,
   activityLogs,
   logActivity,
+  loggedInUser,
   showAlert = (t, m, cb) => { alert(`${t}\n\n${m}`); if (cb) cb(); },
   showConfirm = (t, m, oC, oCa) => { if (confirm(`${t}\n\n${m}`)) { oC(); } else if (oCa) { oCa(); } },
   restoreOriginalWebsiteContent,
@@ -243,8 +253,10 @@ export default function AdminPanel({
 }: AdminPanelProps) {
   
   // Current logged-in role simulator (Owner is default)
-  const [currentRole, setCurrentRole] = useState<"Owner" | "Manager" | "Sales">(
-    "Owner",
+ const currentRole = loggedInUser?.role || "Sales";
+const canEditCore = currentRole === "Owner" || currentRole === "Manager";
+const isOwner = currentRole === "Owner";
+const isSales = currentRole === "Sales";
   );
   const [activeAdminTab, setActiveAdminTab] = useState<
     | "dashboard"
@@ -803,6 +815,7 @@ export default function AdminPanel({
     showAlert("Settings Saved", "The Home Screen display settings, hero statement, global social channels, contact information, and executive team roster have been permanently updated!");
   };
 
+  // Admin users lists
   // Admin users lists
   const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
