@@ -399,7 +399,7 @@ export default function App() {
 
   // Core UI Control States
   const [activeTab, setActiveTab] = useState<'home' | 'properties' | 'projects' | 'favorites' | 'about' | 'blog' | 'contact' | 'admin'>('home');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState<AdminUser | null>(null);
   const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => 
     safelyParseJSON<boolean>('cap_dark_mode', false)
@@ -679,12 +679,12 @@ export default function App() {
 
   // Administrative Session Inactivity Auto-Logout
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!loggedInUser) return;
 
     let timeoutId: NodeJS.Timeout;
 
     const logoutDueToInactivity = () => {
-      setIsLoggedIn(false);
+      setLoggedInUser(null);
       logActivity('auth', 'Logged out automatically due to 30 minutes of administrative inactivity');
       showAlert('Session Timeout', 'Your administration session has been automatically closed after 30 minutes of inactive idle state.');
     };
@@ -708,7 +708,7 @@ export default function App() {
         window.removeEventListener(evt, resetTimer);
       });
     };
-  }, [isLoggedIn]);
+  }, [loggedInUser]);
 
   useEffect(() => {
     localStorage.setItem('cap_projects', JSON.stringify(projects));
@@ -1025,6 +1025,7 @@ export default function App() {
                 onClick={() => {
                   setActiveTab('home');
                   setActivePropertyId(null);
+                  setLoggedInUser(null);
                   window.history.pushState({}, '', '/');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -1109,6 +1110,7 @@ export default function App() {
                   onClick={() => {
                     setActiveTab('home');
                     setActivePropertyId(null);
+                    setLoggedInUser(null);
                     window.history.pushState({}, '', '/');
                     setMobileMenuOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2495,7 +2497,7 @@ export default function App() {
               )}
 
               {activeTab === 'admin' && (
-                isLoggedIn ? (
+                loggedInUser ? (
                   <AdminPanel
                     properties={properties}
                     setProperties={setProperties}
@@ -2532,10 +2534,11 @@ export default function App() {
                     showConfirm={showConfirm}
                     restoreOriginalWebsiteContent={restoreOriginalWebsiteContent}
                     isRestoring={isRestoring}
+                    loggedInUser={loggedInUser}
                   />
                 ) : (
                   <Login onLogin={(user) => {
-                    setIsLoggedIn(true);
+                    setLoggedInUser(user);
                     setActiveTab('admin');
                   }} />
                 )
@@ -2650,33 +2653,33 @@ export default function App() {
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
                           <td key={p.id} className="p-4 font-bold font-mono text-red-700 dark:text-red-500 text-sm">
                             ETB {p.price.toLocaleString()}
-                          </td>
+                           </td>
                         ))}
-                      </tr>
+                       </tr>
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Floor Area (Sqm)</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
                           <td key={p.id} className="p-4 font-mono font-bold">
                             {p.areaSqm} sqm
-                          </td>
+                           </td>
                         ))}
-                      </tr>
+                       </tr>
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Bedrooms Config</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
                           <td key={p.id} className="p-4 font-mono">
                             {p.bedrooms} Bedrooms
-                          </td>
+                           </td>
                         ))}
-                      </tr>
+                       </tr>
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Bathrooms count</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
                           <td key={p.id} className="p-4 font-mono">
                             {p.bathrooms} Bathrooms
-                          </td>
+                           </td>
                         ))}
-                      </tr>
+                       </tr>
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Status Indicator</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
@@ -2684,17 +2687,17 @@ export default function App() {
                             <span className="bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-lg border border-red-100 dark:border-red-900/30">
                               {p.status}
                             </span>
-                          </td>
+                           </td>
                         ))}
-                      </tr>
+                       </tr>
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Location Coordinate</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
                           <td key={p.id} className="p-4 text-[11px] text-zinc-700 dark:text-zinc-400">
                             {p.location}
-                          </td>
+                           </td>
                         ))}
-                      </tr>
+                       </tr>
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Evaluation</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
@@ -2709,9 +2712,9 @@ export default function App() {
                             >
                               Inspect details
                             </button>
-                          </td>
+                           </td>
                         ))}
-                      </tr>
+                       </tr>
                     </tbody>
                   </table>
                 )}
