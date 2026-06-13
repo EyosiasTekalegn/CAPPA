@@ -225,7 +225,6 @@ export default function App() {
     prev: T[],
     next: T[]
   ) => {
-    // Add or Update diffs
     for (const item of next) {
       const prevItem = prev.find((i) => i.id === item.id);
       if (!prevItem || JSON.stringify(prevItem) !== JSON.stringify(item)) {
@@ -233,17 +232,10 @@ export default function App() {
           await setDoc(doc(db, collectionName, item.id), item);
         } catch (error) {
           console.error(`Error saving ${collectionName} item to Firestore:`, error);
-          try {
-            handleFirestoreError(error, OperationType.WRITE, `${collectionName}/${item.id}`);
-          } catch (e) {
-            // Re-throw to caller, conforming to high-fidelity requirements
-            throw e;
-          }
+          handleFirestoreError(error, OperationType.WRITE, `${collectionName}/${item.id}`);
         }
       }
     }
-
-    // Delete diffs
     for (const item of prev) {
       const stillExists = next.some((i) => i.id === item.id);
       if (!stillExists) {
@@ -251,17 +243,12 @@ export default function App() {
           await deleteDoc(doc(db, collectionName, item.id));
         } catch (error) {
           console.error(`Error deleting ${collectionName} item from Firestore:`, error);
-          try {
-            handleFirestoreError(error, OperationType.DELETE, `${collectionName}/${item.id}`);
-          } catch (e) {
-            throw e;
-          }
+          handleFirestoreError(error, OperationType.DELETE, `${collectionName}/${item.id}`);
         }
       }
     }
   };
 
-  // Shadow variables for clean, seamless integration
   const properties = propertiesState;
   const setProperties = (action: React.SetStateAction<Property[]>) => {
     setPropertiesState((prev) => {
@@ -416,7 +403,27 @@ export default function App() {
   const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => 
     safelyParseJSON<boolean>('cap_dark_mode', false)
-  ); // Light white background default
+  );
+
+  // Routing for /admin
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path === '/admin') {
+      setActiveTab('admin');
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.pathname === '/admin') {
+        setActiveTab('admin');
+      } else if (activeTab === 'admin') {
+        setActiveTab('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeTab]);
 
   useEffect(() => {
     async function testConnection() {
@@ -569,7 +576,6 @@ export default function App() {
   const [comparePropertyIds, setComparePropertyIds] = useState<string[]>([]);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
-  // Toggle compare item
   const handleToggleCompare = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setComparePropertyIds(prev => {
@@ -637,7 +643,7 @@ export default function App() {
       message
     };
     setActivityLogs(prev => {
-      const updated = [newLog, ...prev].slice(0, 50); // limit to keep it light
+      const updated = [newLog, ...prev].slice(0, 50);
       return updated;
     });
   };
@@ -685,14 +691,11 @@ export default function App() {
 
     const resetTimer = () => {
       if (timeoutId) clearTimeout(timeoutId);
-      // Scheduled logout in 30 minutes
       timeoutId = setTimeout(logoutDueToInactivity, 30 * 60 * 1000);
     };
 
-    // Initialize timer
     resetTimer();
 
-    // Activities that indicate the administrator is actively using the workstation
     const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
     
     activityEvents.forEach(evt => {
@@ -774,10 +777,8 @@ export default function App() {
 
   // AUTOMATIC AD TRIGGERING CAPABILITIES
   useEffect(() => {
-    // Look up for an active campaign on load
     const activeCampaign = popupAds.find(ad => ad.isActive);
     if (activeCampaign && !adDismissed && activeTab !== 'admin') {
-      // Trigger a light timeout so it pops automatically inside 1.25 seconds
       const timer = setTimeout(() => {
         setCurrentActiveAd(activeCampaign);
       }, 1200);
@@ -791,7 +792,6 @@ export default function App() {
       setLatestExpanded(true);
       setLoadMoreClicks(1);
     } else {
-      // Second click: clean smooth transition to the full property page!
       setActiveTab('properties');
       setLatestExpanded(false);
       setLoadMoreClicks(0);
@@ -808,7 +808,6 @@ export default function App() {
     }
   };
 
-  // Submit messages via Contact component
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactName || !contactEmail || !contactPhone) return;
@@ -841,7 +840,6 @@ export default function App() {
     }, 5000);
   };
 
-  // Callback from dynamic Details component
   const handleCallbackInquiry = (inquiry: Omit<InquiryMessage, 'id' | 'date' | 'status'>) => {
     const id = `msg-${Date.now()}`;
     const fullLog: InquiryMessage = {
@@ -861,7 +859,6 @@ export default function App() {
     );
   };
 
-  // Run property filtering calculations
   const filteredProperties = properties.filter((p) => {
     const locMatch = searchLocation === '' || p.subCity.toLowerCase() === searchLocation.toLowerCase();
     const typeMatch = searchType === '' || p.type.toLowerCase() === searchType.toLowerCase();
@@ -882,14 +879,12 @@ export default function App() {
     setActivePropertyId(null);
   };
 
-  // Reset Filters helper
   const handleClearFilters = () => {
     setSearchLocation('');
     setSearchType('');
     setSearchBedrooms('');
   };
 
-  // High-Fidelity brand component representing exact original design
   const CappadociaLogo = ({ className = "" }: { className?: string }) => {
     return (
       <div 
@@ -916,7 +911,6 @@ export default function App() {
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${isDarkMode ? "dark bg-zinc-950 text-zinc-50" : "bg-zinc-50 text-zinc-900"}`} id="application-root">
 
-      {/* POP-UP MARKETING ADS INLINE/FLOATING NOTIFICATION */}
       <AnimatePresence>
         {currentActiveAd && !adDismissed && activeTab !== 'admin' && (
           <motion.div 
@@ -927,7 +921,6 @@ export default function App() {
             className="fixed bottom-6 right-6 z-50 max-w-sm w-full p-5 sm:p-6 bg-white dark:bg-zinc-900  rounded-2xl shadow-xl border border-black dark:border-zinc-700  select-none"
             id="marketing-popup-overlay"
           >
-            {/* Red circular close button exactly like the screenshot */}
             <button
                onClick={() => setAdDismissed(true)}
                className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-[#DC2626] text-white flex items-center justify-center border-2 border-white dark:border-zinc-900 shadow-md cursor-pointer hover:scale-110 transition-transform"
@@ -971,7 +964,7 @@ export default function App() {
                           setActiveTab(link.toLowerCase() as any);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         } else {
-                          if (!link.startsWith('http://') && !link.startsWith('https://') && !link.startsWith('/') && link.includes('.')) {
+                          if (!link.startsWith('http://') && !link.startsWith('https://') && !link.includes('.')) {
                             link = 'https://' + link;
                           }
                           window.open(link, '_blank', 'noreferrer');
@@ -1008,6 +1001,8 @@ export default function App() {
                   onClick={() => {
                     setActiveTab(tab);
                     setActivePropertyId(null);
+                    if (tab === 'admin') window.history.pushState({}, '', '/admin');
+                    else window.history.pushState({}, '', '/');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className={`text-[11px] font-bold uppercase tracking-widest transition cursor-pointer py-2 flex items-center gap-1.5 border-b-2 ${
@@ -1031,6 +1026,7 @@ export default function App() {
                 onClick={() => {
                   setActiveTab('home');
                   setActivePropertyId(null);
+                  window.history.pushState({}, '', '/');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 hover:bg-red-600 dark:hover:bg-red-600 hover:text-white dark:hover:text-white border border-zinc-200 dark:border-zinc-800/80 transition-all duration-300 shadow-sm cursor-pointer"
@@ -1042,7 +1038,6 @@ export default function App() {
           )}
 
           <div className="hidden lg:flex items-center gap-4">
-            {/* Theme Toggle Switch */}
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
               className="p-2.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-900/50 transition duration-200 cursor-pointer flex items-center justify-center shadow-xs"
@@ -1052,9 +1047,7 @@ export default function App() {
             </button>
           </div>
 
-          {/* Mobile navigation controls */}
           <div className="flex items-center gap-2 lg:hidden">
-            {/* Theme Switcher for mobile device width */}
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`p-2.5 rounded-lg border transition ${'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200'
@@ -1094,6 +1087,8 @@ export default function App() {
                     onClick={() => {
                       setActiveTab(tab);
                       setActivePropertyId(null);
+                      if (tab === 'admin') window.history.pushState({}, '', '/admin');
+                      else window.history.pushState({}, '', '/');
                       setMobileMenuOpen(false);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
@@ -1116,6 +1111,7 @@ export default function App() {
                   onClick={() => {
                     setActiveTab('home');
                     setActivePropertyId(null);
+                    window.history.pushState({}, '', '/');
                     setMobileMenuOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
@@ -1139,7 +1135,6 @@ export default function App() {
 
         <AnimatePresence mode="wait">
           
-          {/* DETAILED VIEW POPUP/OVERLAY/BLOCK */}
           {activePropertyId ? (
             <div key="detail-container">
               {(() => {
@@ -1148,10 +1143,7 @@ export default function App() {
                 return (
                   <PropertyDetails
                     property={selectedProp}
-                    onBack={() => {
-                      setActivePropertyId(null);
-                      // Return smoothly to the tab they came from
-                    }}
+                    onBack={() => setActivePropertyId(null)}
                     onInquire={handleCallbackInquiry}
                     isDarkMode={isDarkMode}
                     allAmenities={allAmenities}
@@ -1168,14 +1160,9 @@ export default function App() {
               transition={{ duration: 0.2 }}
             >
               
-              {/* TAB OR ROUTE 1: HOME PAGE */}
               {activeTab === 'home' && (
                 <div className="space-y-16">
-                  
-                  {/* GIANT DYNAMIC HERO BACKGROUND IMAGE */}
                   <section className="relative z-[35] min-h-[820px] lg:min-h-[880px] flex items-center justify-center overflow-visible pb-12" id="hero-banner-main">
-                    
-                    {/* Background Graphic Asset with High resolution parallax overlay */}
                     <div className="absolute inset-0 z-0">
                       <img 
                         src={homeSettings.heroImage} 
@@ -1183,7 +1170,6 @@ export default function App() {
                         className="w-full h-full object-cover transition duration-700 transform scale-100 placeholder-linear"
                         referrerPolicy="no-referrer"
                       />
-                      {/* Dual Layer Gradient Mesh overlay (White background / dark overlay transitions) */}
                       <div className={`absolute inset-0 transition-all duration-300 ${
                         isDarkMode 
                           ? 'bg-gradient-to-r from-zinc-950 via-zinc-950/90 to-zinc-950/20' 
@@ -1191,23 +1177,18 @@ export default function App() {
                       }`} />
                     </div>
 
-                    {/* Welcoming copy widgets */}
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-8">
                       <div className="lg:col-span-8 text-left space-y-6">
-                        
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-red-600 text-white dark:text-white font-mono text-[10px] tracking-widest uppercase font-black font-semibold">
                           <Sparkles className="w-3.5 h-3.5" />
                           Premium Quality S.C. Certificate
                         </div>
-
                         <h1 className="text-4xl sm:text-6xl font-black font-serif tracking-tight leading-none text-zinc-900 dark:text-white">
                           {homeSettings.heroTitle}
                         </h1>
-
                         <p className="text-sm sm:text-lg max-w-xl leading-relaxed text-zinc-700 dark:text-zinc-300">
                           {homeSettings.heroSubtitle}
                         </p>
-
                         <div className="flex flex-wrap gap-3.5 pt-4">
                           <button
                             onClick={() => {
@@ -1220,13 +1201,11 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                    </div> {/* Close 12-column grid container */}
+                    </div>
 
-                    {/* CENTRAL RE-DESIGNED LINEAR FILTERS BAR WITH GORGEOUS CUSTOM DROPDOWNS */}
                     <div className="absolute bottom-6 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 max-w-4xl w-full z-[45]">
                       <div className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 grid grid-cols-1 md:grid-cols-4 gap-4 products-selector text-zinc-900 dark:text-zinc-100">
                         
-                        {/* Selector 1: Location Subcity Custom Dropdown */}
                         <div className="space-y-1.5 relative">
                           <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
                             Location
@@ -1281,7 +1260,6 @@ export default function App() {
                           </AnimatePresence>
                         </div>
 
-                        {/* Selector 2: Property Type Custom Dropdown */}
                         <div className="space-y-1.5 relative">
                           <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
                             Property Type
@@ -1322,7 +1300,7 @@ export default function App() {
                                       }}
                                       className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
                                         searchType === opt.val
-                                          ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-550'
+                                          ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
                                           : 'text-zinc-700 dark:text-zinc-300'
                                       }`}
                                     >
@@ -1336,7 +1314,6 @@ export default function App() {
                           </AnimatePresence>
                         </div>
 
-                        {/* Selector 3: Bedrooms Custom Dropdown */}
                         <div className="space-y-1.5 relative">
                           <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
                             Bedrooms
@@ -1395,7 +1372,6 @@ export default function App() {
                           </AnimatePresence>
                         </div>
 
-                        {/* Search button aligned contextually */}
                         <div className="pt-5 md:pt-4">
                           <button
                             onClick={() => {
@@ -1414,7 +1390,6 @@ export default function App() {
 
                   </section>
 
-                  {/* VIP FEATURED PROPERTIES */}
                   <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500" id="featured-vip-properties">
                     <div className="text-center max-w-2xl mx-auto space-y-2">
                       <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">LATEST PROPERTIES</span>
@@ -1525,7 +1500,6 @@ export default function App() {
                     </div>
                   </section>
 
-                  {/* REDESIGNED WHY CHOOSE US SECTION */}
                   <section className="bg-zinc-100 dark:bg-zinc-900 py-20 border-y border-zinc-200 dark:border-zinc-800" id="homepage-pillars">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
                       <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -1556,7 +1530,6 @@ export default function App() {
                     </div>
                   </section>
 
-                  {/* CLIENT VERIFIED EXPERIENCES */}
                   <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 animate-fade-in" id="homepage-buyer-feedback">
                     <div className="text-center max-w-2xl mx-auto space-y-2">
                       <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">CLIENT TESTIMONIALS</span>
@@ -1592,7 +1565,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* TAB OR ROUTE 2: PROPERTIES (ASSET CATALOG) */}
               {activeTab === 'properties' && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" id="property-catalog-view">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
@@ -1607,10 +1579,8 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* BEAUTIFUL CUSTOM FILTER CONTROLS FOR THE PROPERTIES CATALOG */}
                   <div className="p-6 rounded-2xl border bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-10 relative z-30">
                     
-                    {/* Filter 1: Location */}
                     <div className="space-y-1.5 relative">
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">
                         Location
@@ -1665,7 +1635,6 @@ export default function App() {
                       </AnimatePresence>
                     </div>
 
-                    {/* Filter 2: Type */}
                     <div className="space-y-1.5 relative">
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">
                         Property Architecture
@@ -1720,7 +1689,6 @@ export default function App() {
                       </AnimatePresence>
                     </div>
 
-                    {/* Filter 3: Bedrooms */}
                     <div className="space-y-1.5 relative">
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">
                         Bedrooms
@@ -1779,7 +1747,6 @@ export default function App() {
                       </AnimatePresence>
                     </div>
 
-                    {/* Filter 4: Clear button */}
                     <div>
                       <button
                         onClick={handleClearFilters}
@@ -1791,7 +1758,6 @@ export default function App() {
 
                   </div>
 
-                  {/* Portfolio Catalog Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {filteredProperties.map((p) => {
                       const isFav = favorites.includes(p.id);
@@ -1887,7 +1853,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* TAB OR ROUTE 2.4: FAVORITES (SAVED THINGS) */}
               {activeTab === 'favorites' && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8" id="favorites-catalog-view">
                   <div className={`space-y-2 border-b pb-5 ${'border-black dark:border-zinc-700'}`}>
@@ -2010,11 +1975,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* TAB OR ROUTE 2.5: PROJECTS SHOWCASE TIMELINE */}
               {activeTab === 'projects' && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12" id="projects-timeline-view">
-                  
-                  {/* Timeline Header in linear design */}
                   <div className="space-y-3 select-none text-center max-w-3xl mx-auto">
                     <span className="text-[10px] tracking-widest uppercase font-extrabold text-[#DC2626] block font-mono">Masterwork Portfolio S.C.</span>
                     <h1 className={`text-3xl sm:text-4xl font-extrabold font-sans uppercase tracking-tight leading-none ${'text-black dark:text-zinc-100'}`}>
@@ -2026,7 +1988,6 @@ export default function App() {
                     <div className="h-1 w-24 bg-red-600 mx-auto mt-4 rounded-full" />
                   </div>
 
-                  {/* Highlight Numbers in linear style */}
                   <div className={`grid grid-cols-2 md:grid-cols-4 gap-6 py-6 border-y max-w-4xl mx-auto text-center transition-all ${'bg-white dark:bg-zinc-900 border-black dark:border-zinc-700'
                   }`}>
                     <div className="space-y-1">
@@ -2047,9 +2008,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Horizontal visual Timeline */}
                   <div className="relative py-8 space-y-12">
-                    {/* Vertical Connecting line on desktop */}
                     <div className="absolute left-4 md:left-1/2 top-4 bottom-4 w-1 bg-black dark:bg-zinc-50 md:-translate-x-1/2" />
 
                     {projects.map((proj, idx) => {
@@ -2062,12 +2021,10 @@ export default function App() {
                           key={proj.title}
                           className="relative grid grid-cols-1 md:grid-cols-12 gap-8 items-center"
                         >
-                          {/* Timeline Date Center Marker */}
                           <div className="absolute left-4 md:left-1/2 top-0 -translate-y-1/2 md:-translate-x-1/2 z-10 w-9 h-9 rounded-full bg-black dark:bg-zinc-50 border-4 border-[#DC2626] flex items-center justify-center font-mono text-[10px] text-white dark:text-zinc-100 font-bold select-none cursor-default shadow-xs">
                             {proj.year.slice(2)}
                           </div>
 
-                          {/* Left Panel */}
                           <div className={`col-span-1 md:col-span-5 ${isLeft ? 'md:order-1' : 'md:order-3 md:text-right'} pl-12 md:pl-0`}>
                             <div className="space-y-3 bg-white dark:bg-zinc-900 p-6 rounded-2xl border-2 border-black dark:border-zinc-700 hover:shadow-lg transition duration-300">
                               <div className={`flex flex-wrap items-center gap-2 ${!isLeft && 'md:justify-end'}`}>
@@ -2099,10 +2056,8 @@ export default function App() {
                             </div>
                           </div>
 
-                          {/* Center Connection Spacer */}
                           <div className="hidden md:block md:col-span-2 md:order-2" />
 
-                          {/* Right Panel (Image Card) */}
                           <div className={`col-span-1 md:col-span-5 ${isLeft ? 'md:order-3' : 'md:order-1'} pl-12 md:pl-0`}>
                             <div className="group relative rounded-2xl overflow-hidden border-2 border-black dark:border-zinc-700 aspect-video shadow-md transition-all duration-300 transform hover:scale-102 bg-[#003B95]">
                               <img src={proj.image} alt={proj.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
@@ -2123,7 +2078,6 @@ export default function App() {
                     })}
                   </div>
 
-                  {/* S.C. High Construction Quality Standards Note */}
                   <div className={`p-8 rounded-3xl border transition-all max-w-4xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden ${'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-800 text-black dark:text-zinc-100'
                   }`}>
                     <div className="space-y-1.5 max-w-xl">
@@ -2146,11 +2100,9 @@ export default function App() {
                 </div>
               )}
 
-              {/* TAB OR ROUTE 3: ABOUT CAPPADOCIA (Completely rebuilt, simple English, incorporates Our Team) */}
               {activeTab === 'about' && (
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16" id="about-cappadocia-view">
                   
-                  {/* Hero Story Block */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
                     <div className="lg:col-span-6 space-y-6">
                       <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">Who We Are</span>
@@ -2190,7 +2142,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Pillars Section */}
                   <div className="space-y-8 pt-8 border-t border-black dark:border-zinc-700">
                     <div className="text-center max-w-2xl mx-auto space-y-2">
                       <span className="text-xs uppercase font-extrabold text-blue-600  font-mono tracking-widest block">Our Core Pillars</span>
@@ -2227,7 +2178,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* OUR TEAM SECTION */}
                   <div className="space-y-8 pt-8 border-t border-black dark:border-zinc-700">
                     <div className="text-center max-w-2xl mx-auto space-y-2">
                       <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">Executive Team</span>
@@ -2263,7 +2213,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* TESTIMONIALS SECTION (CLEAN COMPONENT WITH NO IMAGES) */}
                   <div className="space-y-8 pt-8 border-t border-black dark:border-zinc-700">
                     <div className="text-center max-w-2xl mx-auto space-y-2">
                       <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">Client Experiences</span>
@@ -2298,7 +2247,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* TAB OR ROUTE 4: DYNAMIC BLOGS / MARKT NEWS */}
               {activeTab === 'blog' && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8" id="blog-posts-view">
                   
@@ -2347,7 +2295,6 @@ export default function App() {
                     ))}
                   </div>
 
-                  {/* ACTIVE VIEWING BLOG MODAL OVERLAY */}
                   <AnimatePresence>
                     {viewingBlog && (
                       <motion.div 
@@ -2405,7 +2352,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* TAB OR ROUTE 5: CONTACT & PHYSICAL LOCATION ADDRESS */}
               {activeTab === 'contact' && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12" id="contact-portal-view">
                   
@@ -2421,7 +2367,6 @@ export default function App() {
 
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
                     
-                    {/* Contacts Details Panel */}
                     <div className="lg:col-span-5 space-y-6">
                       <div className={`p-6 rounded-2xl border space-y-6 ${'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-800'
                       }`}>
@@ -2466,7 +2411,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Interactive Form Panel */}
                     <div className="lg:col-span-7">
                       <div className={`p-6 rounded-2xl border shadow-sm ${'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'
                       }`}>
@@ -2552,9 +2496,6 @@ export default function App() {
                 </div>
               )}
 
-
-
-               {/* TAB OR ROUTE 6: ADMIN PORTAL SUB-VIEW */}
               {activeTab === 'admin' && (
                 isLoggedIn ? (
                   <AdminPanel
@@ -2643,7 +2584,6 @@ export default function App() {
       <AnimatePresence>
         {isCompareModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-            {/* Ambient Backdrop Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2652,7 +2592,6 @@ export default function App() {
               className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md"
             />
 
-            {/* Modal Dialog Container */}
             <motion.div
               initial={{ scale: 0.94, y: 30, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -2660,7 +2599,6 @@ export default function App() {
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="relative w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-805 text-zinc-900 dark:text-zinc-100 flex flex-col z-10"
             >
-              {/* Modal Header */}
               <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
                 <div>
                   <span className="text-[9px] uppercase font-black tracking-widest text-red-700 dark:text-red-500 font-mono block">Direct Side-By-Side Comparison</span>
@@ -2674,7 +2612,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Modal Content */}
               <div className="p-6 overflow-x-auto">
                 {comparePropertyIds.length === 0 ? (
                   <div className="py-12 text-center text-zinc-700 dark:text-zinc-400">
@@ -2710,7 +2647,6 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80 text-xs font-medium text-zinc-800 dark:text-zinc-200">
-                      {/* Price Parameter */}
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Base Investment Price</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
@@ -2719,7 +2655,6 @@ export default function App() {
                           </td>
                         ))}
                       </tr>
-                      {/* Area Parameter */}
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Floor Area (Sqm)</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
@@ -2728,7 +2663,6 @@ export default function App() {
                           </td>
                         ))}
                       </tr>
-                      {/* Bedrooms Parameter */}
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Bedrooms Config</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
@@ -2737,7 +2671,6 @@ export default function App() {
                           </td>
                         ))}
                       </tr>
-                      {/* Bathrooms Parameter */}
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Bathrooms count</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
@@ -2746,7 +2679,6 @@ export default function App() {
                           </td>
                         ))}
                       </tr>
-                      {/* Status Parameter */}
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Status Indicator</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
@@ -2757,7 +2689,6 @@ export default function App() {
                           </td>
                         ))}
                       </tr>
-                      {/* Physical Location */}
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Location Coordinate</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
@@ -2766,7 +2697,6 @@ export default function App() {
                           </td>
                         ))}
                       </tr>
-                      {/* Action button */}
                       <tr>
                         <td className="py-4 text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider font-mono text-[9px]">Evaluation</td>
                         {properties.filter(p => comparePropertyIds.includes(p.id)).slice(0, 3).map((p) => (
@@ -2789,7 +2719,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Modal Footer */}
               <div className="p-5 bg-zinc-50 dark:bg-zinc-950/40 flex items-center justify-end border-t border-zinc-100 dark:border-zinc-800/80 rounded-b-3xl">
                 <button
                   onClick={() => setIsCompareModalOpen(false)}
@@ -2809,7 +2738,6 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-left">
-              {/* Column 1: Brand Logo & Mantra */}
               <div className="space-y-4">
                 <CappadociaLogo className="scale-90 origin-left mb-1" />
                 <p className={`text-xs leading-relaxed max-w-sm ${isDarkMode ? "text-zinc-400" : "text-zinc-700"}`}>
@@ -2817,7 +2745,6 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Column 2: Quick Links */}
               <div className="space-y-3">
                 <h3 className="text-xs uppercase font-extrabold text-[#DC2626] font-sans tracking-wide">
                   Navigation
@@ -2837,7 +2764,6 @@ export default function App() {
                 </ul>
               </div>
 
-              {/* Column 3: Premium Contacts */}
               <div className="space-y-3">
                 <h3 className="text-xs uppercase font-extrabold text-[#DC2626] font-sans tracking-wide">
                   Get In Touch
@@ -2862,7 +2788,6 @@ export default function App() {
                 </ul>
               </div>
 
-              {/* Column 4: Social Links */}
               <div className="space-y-3">
                 <h3 className="text-xs uppercase font-extrabold text-[#DC2626] font-sans tracking-wide">
                   Follow Us
@@ -2911,9 +2836,10 @@ export default function App() {
 
             <div className={`pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-semibold ${isDarkMode ? "border-zinc-900 text-zinc-400" : "border-zinc-300 text-zinc-500"}`}>
               <p>© {new Date().getFullYear()} Cappadocia Real Estate S.C. All rights reserved.</p>
-              <p className="text-[9px] text-zinc-400">v{import.meta.env.VITE_APP_VERSION}</p>
-              <p className="flex items-center gap-1 text-zinc-500 font-sans font-black uppercase text-[9px] tracking-wider">
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-[9px] text-zinc-400 font-mono">v{import.meta.env.VITE_APP_VERSION || '1'}</p>
+                <p className="flex items-center gap-1 text-zinc-500 font-sans font-black uppercase text-[9px] tracking-wider"></p>
+              </div>
             </div>
           </div>
         </footer>
