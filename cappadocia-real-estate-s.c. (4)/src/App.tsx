@@ -398,7 +398,7 @@ export default function App() {
   }, []);
 
   // Core UI Control States
-  const [activeTab, setActiveTab ] = useState<'home' | 'properties' | 'projects' | 'favorites' | 'about' | 'blog' | 'contact' | 'admin'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'properties' | 'projects' | 'favorites' | 'about' | 'blog' | 'contact' | 'admin'>('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => 
@@ -992,17 +992,16 @@ export default function App() {
           
           <CappadociaLogo />
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - Admin button removed */}
           {activeTab !== 'admin' ? (
             <nav className="hidden lg:flex items-center gap-5 xl:gap-7">
-              {(['home', 'about', 'properties', 'projects', 'blog', 'favorites', 'contact', 'admin'] as const).map((tab) => (
+              {(['home', 'about', 'properties', 'projects', 'blog', 'favorites', 'contact'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => {
                     setActiveTab(tab);
                     setActivePropertyId(null);
-                    if (tab === 'admin') window.history.pushState({}, '', '/admin');
-                    else window.history.pushState({}, '', '/');
+                    window.history.pushState({}, '', '/');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className={`text-[11px] font-bold uppercase tracking-widest transition cursor-pointer py-2 flex items-center gap-1.5 border-b-2 ${
@@ -1068,7 +1067,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* MOBILE NAV DRAWER */}
+      {/* MOBILE NAV DRAWER - Admin button removed */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div 
@@ -1081,14 +1080,13 @@ export default function App() {
           >
             <div className="px-6 py-5 space-y-3.5 shadow-xl">
               {activeTab !== 'admin' ? (
-                (['home', 'about', 'properties', 'projects', 'blog', 'favorites', 'contact', 'admin'] as const).map((tab) => (
+                (['home', 'about', 'properties', 'projects', 'blog', 'favorites', 'contact'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => {
                       setActiveTab(tab);
                       setActivePropertyId(null);
-                      if (tab === 'admin') window.history.pushState({}, '', '/admin');
-                      else window.history.pushState({}, '', '/');
+                      window.history.pushState({}, '', '/');
                       setMobileMenuOpen(false);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
