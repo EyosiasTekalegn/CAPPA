@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import {
   Building2,
   MessageSquare,
@@ -815,13 +816,15 @@ const [activeAdminTab, setActiveAdminTab] = useState<
 
   // Admin users lists
   // Admin users lists (with Firebase Auth)
-  const handleSaveUser = async (e: React.FormEvent) => {
+// ==================== USER MANAGEMENT ====================
+const handleSaveUser = async (e: React.FormEvent) => {
   e.preventDefault();
-  if (!isOwner) return;
-
+  if (!isOwner) {
+    showAlert("Permission Denied", "Only the Owner can add or edit admin users.");
+    return;
+  }
   try {
     if (editingUserId) {
-      // Update existing user (Firestore only)
       const userRef = doc(db, "users", editingUserId);
       await setDoc(userRef, {
         fullName: userFullName,
@@ -829,16 +832,15 @@ const [activeAdminTab, setActiveAdminTab] = useState<
         phone: userPhone,
         role: userRole,
       }, { merge: true });
-      if (userPassword?.trim()) {
+      if (userPassword && userPassword.trim() !== "") {
         await sendPasswordResetEmail(auth, userEmail);
-        showAlert("Password Reset Email Sent", `A reset link sent to ${userEmail}.`);
+        showAlert("Password Reset Email Sent", `A reset link has been sent to ${userEmail}.`);
       }
-      showAlert("User Updated", "User info updated.");
+      showAlert("User Updated", "User information updated successfully.");
+      logActivity("auth", `User ${userFullName} (${userEmail}) updated by ${loggedInUser?.fullName}`);
     } else {
-      // Create new user: first create Auth account
       const userCredential = await createUserWithEmailAndPassword(auth, userEmail, userPassword);
       const uid = userCredential.user.uid;
-      // Firestore document with UID as ID
       const newUser: AdminUser = {
         id: uid,
         fullName: userFullName,
@@ -848,19 +850,22 @@ const [activeAdminTab, setActiveAdminTab] = useState<
         isActive: true,
       };
       await setDoc(doc(db, "users", uid), newUser);
-      setUsers(prev => [...prev, newUser]);
-      showAlert("User Created", `User ${userFullName} created. They can now log in.`);
+      setUsers((prev) => [...prev, newUser]);
+      showAlert("User Created", `User ${userFullName} has been created. They can now log in.`);
+      logActivity("auth", `New user created: ${userFullName} (${userEmail}) by ${loggedInUser?.fullName}`);
     }
     resetUserForm();
   } catch (err: any) {
-    console.error(err);
+    console.error("User save error:", err);
     let msg = err.message;
     if (err.code === "auth/email-already-in-use") msg = "Email already registered.";
-    else if (err.code === "auth/weak-password") msg = "Password too weak (min 6 chars).";
+    else if (err.code === "auth/weak-password") msg = "Password too weak. Use at least 6 characters.";
+    else if (err.code === "auth/invalid-email") msg = "Invalid email address.";
     showAlert("Error", msg);
   }
 };
-  const handleEditUser = (user: AdminUser) => {
+
+const handleEditUser = (user: AdminUser) => {
   if (!isOwner) return;
   setEditingUserId(user.id);
   setUserFullName(user.fullName);
@@ -881,7 +886,41 @@ const handleToggleUserStatus = async (id: string) => {
   logActivity("auth", `User ${user.fullName} ${newStatus ? "activated" : "deactivated"} by ${loggedInUser?.fullName}`);
   showAlert("Status Updated", `${user.fullName} is now ${newStatus ? "active" : "inactive"}.`);
 };
- const resetUserForm = () => {
+
+const handleDeleteUser = async (id: string) => {
+  // Allow Owner or Manager to delete, but Manager cannot delete Owner
+  if (!canEditCore) {
+    showAlert("Permission Denied", "Only Owners and Managers can delete admin users.");
+    return;
+  }
+  const userToDelete = users.find((u) => u.id === id);
+  if (!userToDelete) return;
+  if (userToDelete.id === loggedInUser?.id) {
+    showAlert("Cannot Delete Self", "You cannot delete your own account.");
+    return;
+  }
+  if (userToDelete.role === "Owner" && currentRole !== "Owner") {
+    showAlert("Permission Denied", "Only the Owner can delete another Owner account.");
+    return;
+  }
+  showConfirm(
+    "Confirm User Deletion",
+    `Are you sure you want to delete ${userToDelete.fullName} (${userToDelete.email})? This action is irreversible.`,
+    async () => {
+      try {
+        await deleteDoc(doc(db, "users", id));
+        setUsers((prev) => prev.filter((u) => u.id !== id));
+        logActivity("auth", `User ${userToDelete.fullName} (${userToDelete.email}) deleted by ${loggedInUser?.fullName}`);
+        showAlert("User Deleted", "The user has been removed from the system.");
+      } catch (err: any) {
+        console.error("Delete user error:", err);
+        showAlert("Error", err.message);
+      }
+    }
+  );
+};
+
+const resetUserForm = () => {
   setIsAddingUser(false);
   setEditingUserId(null);
   setUserFullName("");
@@ -3492,14 +3531,20 @@ const handleToggleUserStatus = async (id: string) => {
                             {u.isActive ? "Active" : "Deactivated"}
                           </button>
                         </td>
-                        <td className="p-4 text-right">
-                          <button
-                            onClick={() => handleEditUser(u)}
-                            className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded text-[10px] font-bold transition-all cursor-pointer"
-                          >
-                            Edit
-                          </button>
-                        </td>
+                       <td className="p-4 text-right">
+  <button
+    onClick={() => handleEditUser(u)}
+    className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded text-[10px] font-bold transition-all cursor-pointer mr-2"
+  >
+    Edit
+  </button>
+  <button
+    onClick={() => handleDeleteUser(u.id)}
+    className="px-3 py-1 bg-red-100 dark:bg-red-950/40 hover:bg-red-200 dark:hover:bg-red-950/60 text-red-700 dark:text-red-400 rounded text-[10px] font-bold transition-all cursor-pointer"
+  >
+    Delete
+  </button>
+</td>
                       </tr>
                     ))}
                   </tbody>
