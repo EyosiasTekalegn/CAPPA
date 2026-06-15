@@ -888,13 +888,19 @@ const handleToggleUserStatus = async (id: string) => {
 };
 
 const handleDeleteUser = async (id: string) => {
-  // Allow Owner or Manager to delete, but Manager cannot delete Owner
+  if (!id) {
+    showAlert("Error", "Invalid user ID.");
+    return;
+  }
   if (!canEditCore) {
     showAlert("Permission Denied", "Only Owners and Managers can delete admin users.");
     return;
   }
-  const userToDelete = users.find((u) => u.id === id);
-  if (!userToDelete) return;
+  const userToDelete = (users || []).find((u) => u.id === id);
+  if (!userToDelete) {
+    showAlert("Error", "User not found.");
+    return;
+  }
   if (userToDelete.id === loggedInUser?.id) {
     showAlert("Cannot Delete Self", "You cannot delete your own account.");
     return;
@@ -908,8 +914,9 @@ const handleDeleteUser = async (id: string) => {
     `Are you sure you want to delete ${userToDelete.fullName} (${userToDelete.email})? This action is irreversible.`,
     async () => {
       try {
-        await deleteDoc(doc(db, "users", id));
-       setUsers((prev) => (prev || []).filter((u) => u.id !== id));
+        const userDocRef = doc(db, "users", id);
+        await deleteDoc(userDocRef);
+        setUsers((prev) => (prev || []).filter((u) => u.id !== id));
         logActivity("auth", `User ${userToDelete.fullName} (${userToDelete.email}) deleted by ${loggedInUser?.fullName}`);
         showAlert("User Deleted", "The user has been removed from the system.");
       } catch (err: any) {
