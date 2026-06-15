@@ -1468,7 +1468,7 @@ const resetUserForm = () => {
                           value={propType}
                           onChange={(val) => setPropType(val)}
                           placeholder="Select Property Type"
-                          options=options={(allTypes || []).map((type) => ({ value: type, label: type }))}
+                          options={(allTypes || []).map((type) => ({ value: type, label: type }))}
                             value: type,
                             label: type,
                           }))}
