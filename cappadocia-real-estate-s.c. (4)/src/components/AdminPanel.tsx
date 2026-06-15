@@ -1468,9 +1468,7 @@ const resetUserForm = () => {
                           value={propType}
                           onChange={(val) => setPropType(val)}
                           placeholder="Select Property Type"
-                          options={(allTypes || []).map((type) => ({ value: type, label: type }))}
-                            value: type,
-                            label: type,
+                          options={(allTypes || []).map((type) => ({ value: type, label: type }))
                           }))}
                         />
                       </div>
@@ -2820,8 +2818,6 @@ const resetUserForm = () => {
                         onChange={(val) => setProjSubCity(val)}
                         placeholder="Select Location"
                         options={(allLocations || []).map((loc) => ({ value: loc, label: loc }))}
-                          value: loc,
-                          label: loc,
                         }))}
                       />
                     </div>
