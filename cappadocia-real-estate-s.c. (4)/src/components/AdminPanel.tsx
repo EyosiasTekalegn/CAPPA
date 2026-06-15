@@ -1151,19 +1151,19 @@ const resetUserForm = () => {
             Messages ({messages.length})
           </button>
 
-          {isOwner && (
-            <button
-              onClick={() => setActiveAdminTab("users")}
-              className={`text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-2.5 cursor-pointer flex-shrink-0 transition-all ${
-                activeAdminTab === "users"
-                  ? "bg-zinc-100 dark:bg-zinc-800 text-blue-600 border border-zinc-200 dark:border-zinc-800 shadow-sm font-bold shadow-xs"
-                  : "hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400"
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              Staff ({users.length})
-            </button>
-          )}
+{canEditCore && (
+  <button
+    onClick={() => setActiveAdminTab("users")}
+    className={`text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-2.5 cursor-pointer flex-shrink-0 transition-all ${
+      activeAdminTab === "users"
+        ? "bg-zinc-100 dark:bg-zinc-800 text-blue-600 border border-zinc-200 dark:border-zinc-800 shadow-sm font-bold shadow-xs"
+        : "hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400"
+    }`}
+  >
+    <Users className="w-4 h-4" />
+    Staff ({users.length})
+  </button>
+)}
 
           {canEditCore && (
             <button
