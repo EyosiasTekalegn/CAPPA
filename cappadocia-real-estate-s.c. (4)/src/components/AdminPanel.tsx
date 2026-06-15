@@ -3320,32 +3320,55 @@ const resetUserForm = () => {
                             />
                             <div className="flex gap-2">
                               <button
-                                onClick={() => {
-                                  setMessages((prev) =>
-                                    prev.map((msg) =>
-                                      msg.id === m.id
-                                        ? {
-                                            ...msg,
-                                            status: "Replied",
-                                            replyText: replyMessage,
-                                            replyDate: new Date()
-                                              .toISOString()
-                                              .split("T")[0],
-                                          }
-                                        : msg,
-                                    ),
-                                  );
-                                  setReplyingTo(null);
-                                  setReplyMessage("");
-                                  logActivity(
-                                    "message",
-                                    `Replied to inquiry from ${m.fullName}`,
-                                  );
-                                }}
-                                className="bg-[#003B95] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#002f75] transition cursor-pointer"
-                              >
-                                Send Reply
-                              </button>
+  onClick={async () => {
+    // 1. Save the reply message locally before clearing
+    const replyTextToSend = replyMessage;
+    
+    // 2. Update Firestore (same as before)
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === m.id
+          ? {
+              ...msg,
+              status: "Replied",
+              replyText: replyMessage,
+              replyDate: new Date().toISOString().split("T")[0],
+            }
+          : msg,
+      ),
+    );
+    setReplyingTo(null);
+    setReplyMessage("");
+    logActivity("message", `Replied to inquiry from ${m.fullName}`);
+
+    // 3. Send the actual email via Resend API
+    try {
+      const response = await fetch("/api/send-reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: m.email,
+          subject: `Reply to your inquiry about ${m.propertyTitle || "our property"}`,
+          text: `Dear ${m.fullName},\n\n${replyTextToSend}\n\nBest regards,\nCappadocia Real Estate S.C.`,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Email send failed:", errorData);
+        showAlert("Email Not Sent", "The reply was saved in the system but could not be delivered. Please check your Resend configuration.");
+      } else {
+        showAlert("Email Sent", `Your reply has been sent to ${m.email}.`);
+      }
+    } catch (err) {
+      console.error("Network error:", err);
+      showAlert("Network Error", "Could not connect to the email service. The reply was saved locally.");
+    }
+  }}
+  className="bg-[#003B95] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#002f75] transition cursor-pointer"
+>
+  Send Reply
+</button>
                               <button
                                 onClick={() => {
                                   setReplyingTo(null);
