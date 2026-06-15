@@ -909,7 +909,7 @@ const handleDeleteUser = async (id: string) => {
     async () => {
       try {
         await deleteDoc(doc(db, "users", id));
-        setUsers((prev) => prev.filter((u) => u.id !== id));
+       setUsers((prev) => (prev || []).filter((u) => u.id !== id));
         logActivity("auth", `User ${userToDelete.fullName} (${userToDelete.email}) deleted by ${loggedInUser?.fullName}`);
         showAlert("User Deleted", "The user has been removed from the system.");
       } catch (err: any) {
@@ -1647,7 +1647,8 @@ const resetUserForm = () => {
   </label>
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 bg-zinc-50 dark:bg-zinc-900/40 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800/60 mb-4">
     {(allAmenities || []).map((amenity) => {
-      const isChecked = propAmenities.includes(amenity);
+     const isChecked = (propAmenities || []).includes(amenity);
+     const currentOption = (options || []).find((opt) => opt.value === value);
       return (
         <button
           type="button"
