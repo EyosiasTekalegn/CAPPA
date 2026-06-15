@@ -3379,7 +3379,7 @@ const resetUserForm = () => {
           )}
 
           {/* TAB 7: MANAGEMENT USERS */}
-          {activeAdminTab === "users" && isOwner && (
+          {activeAdminTab === "users" && canEditCore && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
