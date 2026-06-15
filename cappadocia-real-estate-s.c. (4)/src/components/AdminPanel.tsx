@@ -1464,13 +1464,12 @@ const resetUserForm = () => {
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Property Type *
                         </label>
-                        <AdminCustomSelect
-                          value={propType}
-                          onChange={(val) => setPropType(val)}
-                          placeholder="Select Property Type"
-                          options={(allTypes || []).map((type) => ({ value: type, label: type }))
-                          }))}
-                        />
+                       <AdminCustomSelect
+                       value={propType}
+                       onChange={(val) => setPropType(val)}
+                       placeholder="Select Property Type"
+                       options={(allTypes || []).map((type) => ({ value: type, label: type }))}
+                          />
                       </div>
 
                       <div>
@@ -2813,12 +2812,11 @@ const resetUserForm = () => {
                       <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                         Location *
                       </label>
-                      <AdminCustomSelect
-                        value={projSubCity}
-                        onChange={(val) => setProjSubCity(val)}
-                        placeholder="Select Location"
-                        options={(allLocations || []).map((loc) => ({ value: loc, label: loc }))}
-                        }))}
+                     <AdminCustomSelect
+                      value={projSubCity}
+                      onChange={(val) => setProjSubCity(val)}
+                      placeholder="Select Location"
+                     options={(allLocations || []).map((loc) => ({ value: loc, label: loc }))}
                       />
                     </div>
 
