@@ -1468,7 +1468,7 @@ const resetUserForm = () => {
                           value={propType}
                           onChange={(val) => setPropType(val)}
                           placeholder="Select Property Type"
-                          options={allTypes.map((type) => ({
+                          options={(allTypes || []).map((type) => ...)}
                             value: type,
                             label: type,
                           }))}
@@ -1649,7 +1649,7 @@ const resetUserForm = () => {
                           Select Executive Services & Infrastructure
                         </label>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 bg-zinc-50 dark:bg-zinc-900/40 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800/60 mb-4">
-                          {allAmenities.map((amenity) => {
+                         {(allAmenities || []).map((amenity) => {
                             const isChecked = propAmenities.includes(amenity);
                             return (
                               <button
@@ -2819,7 +2819,7 @@ const resetUserForm = () => {
                         value={projSubCity}
                         onChange={(val) => setProjSubCity(val)}
                         placeholder="Select Location"
-                        options={allLocations.map((loc) => ({
+                        options{(allLocations || []).map((loc) => ...)}
                           value: loc,
                           label: loc,
                         }))}
