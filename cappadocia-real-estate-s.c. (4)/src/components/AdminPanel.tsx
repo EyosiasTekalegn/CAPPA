@@ -1641,56 +1641,50 @@ const resetUserForm = () => {
                         />
                       </div>
 
-                      <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-2">
-                          Select Executive Services & Infrastructure
-                        </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 bg-zinc-50 dark:bg-zinc-900/40 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800/60 mb-4">
-                         options={(allAmenities || []).map((amenity) => ({ value: amenity, label: amenity }))}
-                            const isChecked = propAmenities.includes(amenity);
-                            return (
-                              <button
-                                type="button"
-                                key={amenity}
-                                onClick={() => {
-                                  if (isChecked) {
-                                    setPropAmenities((prev) =>
-                                      prev.filter((x) => x !== amenity),
-                                    );
-                                  } else {
-                                    setPropAmenities((prev) => [
-                                      ...prev,
-                                      amenity,
-                                    ]);
-                                  }
-                                }}
-                                className={`p-2.5 rounded-lg border text-left text-xs font-semibold flex items-center gap-2 transition cursor-pointer ${
-                                  isChecked
-                                    ? "bg-red-50 dark:bg-red-950/20 border-red-505 text-[#DC2626] dark:text-red-400"
-                                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-                                }`}
-                              >
-                                <span
-                                  className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] ${
-                                    isChecked
-                                      ? "bg-[#DC2626] border-[#DC2626] text-white font-bold"
-                                      : "border-zinc-300 dark:border-zinc-700 text-transparent"
-                                  }`}
-                                >
-                                  ✓
-                                </span>
-                                {amenity}
-                              </button>
-                            );
-                          })}
-                          {allAmenities.length === 0 && (
-                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium col-span-full">
-                              No active catalog amenities found. Add some in the
-                              "Catalogs" tab.
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                    <div className="sm:col-span-2">
+  <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-2">
+    Select Executive Services & Infrastructure
+  </label>
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 bg-zinc-50 dark:bg-zinc-900/40 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800/60 mb-4">
+    {(allAmenities || []).map((amenity) => {
+      const isChecked = propAmenities.includes(amenity);
+      return (
+        <button
+          type="button"
+          key={amenity}
+          onClick={() => {
+            if (isChecked) {
+              setPropAmenities((prev) => prev.filter((x) => x !== amenity));
+            } else {
+              setPropAmenities((prev) => [...prev, amenity]);
+            }
+          }}
+          className={`p-2.5 rounded-lg border text-left text-xs font-semibold flex items-center gap-2 transition cursor-pointer ${
+            isChecked
+              ? "bg-red-50 dark:bg-red-950/20 border-red-505 text-[#DC2626] dark:text-red-400"
+              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+          }`}
+        >
+          <span
+            className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] ${
+              isChecked
+                ? "bg-[#DC2626] border-[#DC2626] text-white font-bold"
+                : "border-zinc-300 dark:border-zinc-700 text-transparent"
+            }`}
+          >
+            ✓
+          </span>
+          {amenity}
+        </button>
+      );
+    })}
+    {allAmenities.length === 0 && (
+      <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium col-span-full">
+        No active catalog amenities found. Add some in the "Catalogs" tab.
+      </p>
+    )}
+  </div>
+</div>
 
                       {/* Room & Unit Arrays */}
                       <div className="sm:col-span-2 space-y-6 bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800/60 mt-2 mb-4">
