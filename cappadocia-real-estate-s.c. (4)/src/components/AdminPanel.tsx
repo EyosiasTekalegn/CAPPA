@@ -866,7 +866,15 @@ const handleSaveUser = async (e: React.FormEvent) => {
 };
 
 const handleEditUser = (user: AdminUser) => {
-  if (!isOwner) return;
+  // Only Owner can edit any user. Manager can only edit Sales users.
+  if (currentRole === "Manager" && user.role !== "Sales") {
+    showAlert("Permission Denied", "Managers can only edit Sales users.");
+    return;
+  }
+  if (!isOwner && !(currentRole === "Manager" && user.role === "Sales")) {
+    showAlert("Permission Denied", "You do not have permission to edit this user.");
+    return;
+  }
   setEditingUserId(user.id);
   setUserFullName(user.fullName);
   setUserEmail(user.email);
@@ -3458,15 +3466,26 @@ const resetUserForm = () => {
                       <label className="block text-[10px] uppercase font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                         Security Auths / Role *
                       </label>
-                      <AdminCustomSelect
-                        value={userRole}
-                        onChange={(val) => setUserRole(val)}
-                        placeholder="Select Role"
-                        options={[
-                          { value: "Owner", label: "Owner" },
-                          { value: "Manager", label: "Manager" },
-                          { value: "Sales", label: "Sales" },
-                        ]}
+                     <AdminCustomSelect
+                      value={userRole}
+                      onChange={(val) => {
+               // If Manager, only allow "Sales" role
+                  if (currentRole === "Manager" && val !== "Sales") {
+                 showAlert("Permission Denied", "Managers can only assign the Sales role.");
+                 return;
+                  }
+              setUserRole(val);
+                       }}
+                  placeholder="Select Role"
+                   options={
+                   currentRole === "Manager"
+                  ? [{ value: "Sales", label: "Sales" }]
+                  : [
+                  { value: "Owner", label: "Owner" },
+                  { value: "Manager", label: "Manager" },
+                  { value: "Sales", label: "Sales" },
+                        ]
+                         }
                       />
                     </div>
                   </div>
