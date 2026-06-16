@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/index.ts": {
-      "includeFiles": ["src/**", "dist/**"]
+      "includeFiles": "{dist/**,firebase-applet-config.json}"
     }
   },
   "rewrites": [
