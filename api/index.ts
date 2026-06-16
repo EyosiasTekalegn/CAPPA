@@ -12,20 +12,20 @@ import { Resend } from 'resend';
 
 dotenv.config();
 
-// Firebase initialization
+// ========== Firebase initialization ==========
 const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
 const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
-// Email client – use environment variable or fallback to your provided key
+// ========== Email client (Resend) ==========
 const resendApiKey = process.env.RESEND_API_KEY || 're_FDYk8vqb_H3tnKf1nPkbGKfpgEkzNYo1Q';
 const resend = new Resend(resendApiKey);
 
 const app = express();
 app.use(express.json({ limit: "25mb" }));
 
-// Gemini client
+// ========== Gemini client ==========
 const apiKey = process.env.GEMINI_API_KEY;
 const ai = apiKey
   ? new GoogleGenAI({ apiKey, httpOptions: { headers: { "User-Agent": "aistudio-build" } } })
@@ -33,10 +33,12 @@ const ai = apiKey
 
 // ========== API ROUTES ==========
 
+// Health check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", geminiConfigured: !!ai });
 });
 
+// Fetch Firestore data
 app.get("/api/data", async (req, res) => {
   try {
     const collectionsToFetch = ['properties', 'testimonials', 'blogs', 'projects', 'popup_ads', 'users', 'messages'];
@@ -59,6 +61,7 @@ app.get("/api/data", async (req, res) => {
   }
 });
 
+// Export ZIP
 app.get("/api/export-zip", (req, res) => {
   try {
     const zip = new AdmZip();
@@ -91,6 +94,7 @@ app.get("/api/export-zip", (req, res) => {
   }
 });
 
+// Gemini AI
 app.post("/api/gemini", async (req, res) => {
   try {
     const { prompt, imageUrl } = req.body;
@@ -152,18 +156,38 @@ app.post("/api/send-reply", async (req, res) => {
   }
 });
 
-// ====== EXPORT FOR VERCEL ======
-export const handler = serverless(app);
-
-// ====== LOCAL DEVELOPMENT (optional) ======
-if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-  const PORT = 3000;
+// ========== STATIC FILE SERVING (PRODUCTION) ==========
+// In development, use Vite middleware; in production, serve the built dist folder.
+if (process.env.NODE_ENV !== "production") {
+  // Local development: use Vite middleware
   (async () => {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
+  })();
+} else {
+  // Production: serve static files from the 'dist' directory
+  // Resolve the dist path relative to this file's location (api/index.ts -> ../dist)
+  const distPath = path.join(__dirname, '..', 'dist');
+  app.use(express.static(distPath));
+  // For any other request, serve index.html (handles client-side routing)
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+}
+
+// ====== EXPORT FOR VERCEL ======
+export const handler = serverless(app);
+
+// ====== LOCAL DEVELOPMENT (optional) ======
+// This block runs when you start the server directly (e.g., npm run dev)
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  const PORT = 3000;
+  (async () => {
+    // Ensure Vite middleware is attached (it's already attached above)
+    // But we need to start listening on a port.
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Local dev server running on http://localhost:${PORT}`);
     });
