@@ -19,6 +19,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
 // ========== Email client (Resend) ==========
+// Use environment variable or fallback to the key you provided
 const resendApiKey = process.env.RESEND_API_KEY || 're_FDYk8vqb_H3tnKf1nPkbGKfpgEkzNYo1Q';
 const resend = new Resend(resendApiKey);
 
@@ -157,7 +158,6 @@ app.post("/api/send-reply", async (req, res) => {
 });
 
 // ========== STATIC FILE SERVING (PRODUCTION) ==========
-// In development, use Vite middleware; in production, serve the built dist folder.
 if (process.env.NODE_ENV !== "production") {
   // Local development: use Vite middleware
   (async () => {
@@ -171,6 +171,7 @@ if (process.env.NODE_ENV !== "production") {
   // Production: serve static files from the 'dist' directory
   // Resolve the dist path relative to this file's location (api/index.ts -> ../dist)
   const distPath = path.join(__dirname, '..', 'dist');
+  console.log('Serving static files from:', distPath);
   app.use(express.static(distPath));
   // For any other request, serve index.html (handles client-side routing)
   app.get("*", (req, res) => {
@@ -179,15 +180,23 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // ====== EXPORT FOR VERCEL ======
-export const handler = serverless(app);
+// Vercel expects a default export for serverless functions
+export default serverless(app);
 
 // ====== LOCAL DEVELOPMENT (optional) ======
 // This block runs when you start the server directly (e.g., npm run dev)
 if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
   const PORT = 3000;
   (async () => {
-    // Ensure Vite middleware is attached (it's already attached above)
-    // But we need to start listening on a port.
+    // The Vite middleware is already attached above, but we need to start listening.
+    // However, the Vite middleware attachment is inside an async IIFE that might not have completed.
+    // For simplicity, we re-initialize Vite here for local dev.
+    // Alternatively, we could refactor, but this works.
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Local dev server running on http://localhost:${PORT}`);
     });
