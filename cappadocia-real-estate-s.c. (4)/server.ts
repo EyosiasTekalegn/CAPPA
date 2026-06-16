@@ -8,17 +8,24 @@ import dotenv from "dotenv";
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, getDoc, addDoc } from 'firebase/firestore';
 import serverless from 'serverless-http';
+import { Resend } from 'resend';
 
 dotenv.config();
 
+// Firebase initialization
 const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
 const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
+// Email client – use environment variable or fallback to your provided key
+const resendApiKey = process.env.RESEND_API_KEY || 're_FDYk8vqb_H3tnKf1nPkbGKfpgEkzNYo1Q';
+const resend = new Resend(resendApiKey);
+
 const app = express();
 app.use(express.json({ limit: "25mb" }));
 
+// Gemini client
 const apiKey = process.env.GEMINI_API_KEY;
 const ai = apiKey
   ? new GoogleGenAI({ apiKey, httpOptions: { headers: { "User-Agent": "aistudio-build" } } })
@@ -110,31 +117,38 @@ app.post("/api/gemini", async (req, res) => {
   }
 });
 
-// ====== THE MISSING ROUTE ======
+// ========== EMAIL REPLY ENDPOINT ==========
 app.post("/api/send-reply", async (req, res) => {
   try {
-    const { recipientId, subject, body, senderId } = req.body;
-    if (!recipientId || !body) {
-      return res.status(400).json({ error: "Missing required fields: recipientId and body" });
+    const { to, subject, text } = req.body;
+
+    // Basic validation
+    if (!to || !subject || !text) {
+      return res.status(400).json({ error: "Missing required fields: to, subject, text" });
     }
-    const messagesRef = collection(db, "messages");
-    const newMessage = {
-      to: recipientId,
-      from: senderId || "admin",
-      subject: subject || "",
-      body: body,
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
-    const docRef = await addDoc(messagesRef, newMessage);
-    res.status(201).json({
+
+    // Send email via Resend
+    const { data, error } = await resend.emails.send({
+      from: 'Cappadocia Real Estate <noreply@cappadocia.com>', // Change to your verified domain
+      to: [to],
+      subject: subject,
+      text: text,
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return res.status(500).json({ error: error.message || 'Failed to send email' });
+    }
+
+    console.log('Email sent successfully:', data);
+    res.status(200).json({
       success: true,
-      messageId: docRef.id,
+      messageId: data?.id,
       message: "Reply sent successfully",
     });
   } catch (err) {
-    console.error("Error sending reply:", err);
-    res.status(500).json({ error: "Failed to send reply. Please try again later." });
+    console.error("Error sending reply email:", err);
+    res.status(500).json({ error: err instanceof Error ? err.message : "Failed to send reply" });
   }
 });
 
