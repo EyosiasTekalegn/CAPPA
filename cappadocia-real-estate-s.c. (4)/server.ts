@@ -6,7 +6,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, getDoc, addDoc } from 'firebase/firestore';
 
 dotenv.config();
 
@@ -36,12 +36,12 @@ async function startServer() {
       })
     : null;
 
-  // Live Check Endpoint
+  // ========== Live Check Endpoint ==========
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", geminiConfigured: !!ai });
   });
 
-  // API to fetch dynamic data from Firestore
+  // ========== API to fetch dynamic data from Firestore ==========
   app.get("/api/data", async (req, res) => {
     try {
       const collectionsToFetch = ['properties', 'testimonials', 'blogs', 'projects', 'popup_ads', 'users', 'messages'];
@@ -74,7 +74,7 @@ async function startServer() {
     }
   });
 
-  // Export ZIP endpoint
+  // ========== Export ZIP endpoint ==========
   app.get("/api/export-zip", (req, res) => {
     try {
       const zip = new AdmZip();
@@ -127,7 +127,7 @@ async function startServer() {
     }
   });
 
-  // AI Generation with Gemini
+  // ========== AI Generation with Gemini ==========
   app.post("/api/gemini", async (req: express.Request, res: express.Response) => {
     try {
       const { prompt, imageUrl } = req.body;
@@ -184,7 +184,44 @@ async function startServer() {
     }
   });
 
-  // Vite integration middleware
+  // ========== NEW: Send Reply (Admin → Client) ==========
+  app.post("/api/send-reply", async (req: express.Request, res: express.Response) => {
+    try {
+      const { recipientId, subject, body, senderId } = req.body;
+
+      // Basic validation
+      if (!recipientId || !body) {
+        return res.status(400).json({ error: "Missing required fields: recipientId and body" });
+      }
+
+      // Save the message to Firestore under "messages" collection
+      const messagesRef = collection(db, "messages");
+      const newMessage = {
+        to: recipientId,
+        from: senderId || "admin",        // default sender if not provided
+        subject: subject || "",
+        body: body,
+        timestamp: new Date().toISOString(),
+        read: false,
+        // You can add more fields as needed (e.g., type: 'reply')
+      };
+
+      const docRef = await addDoc(messagesRef, newMessage);
+
+      // Optionally, you could also trigger a push notification / email here
+
+      res.status(201).json({
+        success: true,
+        messageId: docRef.id,
+        message: "Reply sent successfully",
+      });
+    } catch (err) {
+      console.error("Error sending reply:", err);
+      res.status(500).json({ error: "Failed to send reply. Please try again later." });
+    }
+  });
+
+  // ========== Vite integration middleware ==========
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
