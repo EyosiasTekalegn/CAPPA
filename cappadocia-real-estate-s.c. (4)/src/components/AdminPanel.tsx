@@ -3319,12 +3319,10 @@ const resetUserForm = () => {
                               rows={3}
                             />
                             <div className="flex gap-2">
-                              <button
+                             <button
   onClick={async () => {
-    // 1. Save the reply message locally before clearing
     const replyTextToSend = replyMessage;
-    
-    // 2. Update Firestore (same as before)
+
     setMessages((prev) =>
       prev.map((msg) =>
         msg.id === m.id
@@ -3341,7 +3339,6 @@ const resetUserForm = () => {
     setReplyMessage("");
     logActivity("message", `Replied to inquiry from ${m.fullName}`);
 
-    // 3. Send the actual email via Resend API
     try {
       const response = await fetch("/api/send-reply", {
         method: "POST",
@@ -3353,10 +3350,10 @@ const resetUserForm = () => {
         }),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Email send failed:", errorData);
-        showAlert("Email Not Sent", "The reply was saved in the system but could not be delivered. Please check your Resend configuration.");
+        console.error("Email send failed:", data);
+        showAlert("Email Not Sent", data.error || "Unknown error.");
       } else {
         showAlert("Email Sent", `Your reply has been sent to ${m.email}.`);
       }
