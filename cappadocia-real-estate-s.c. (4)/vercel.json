@@ -1,9 +1,7 @@
 {
-  "builds": [
-    { "src": "api/index.ts", "use": "@vercel/node" }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
   ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "api/index.ts" },
-    { "src": "/(.*)", "dest": "/" }
-  ]
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
 }
