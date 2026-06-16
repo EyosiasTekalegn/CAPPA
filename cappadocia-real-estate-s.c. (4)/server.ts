@@ -7,238 +7,151 @@ import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, getDoc, addDoc } from 'firebase/firestore';
+import serverless from 'serverless-http';
 
 dotenv.config();
 
-// Firebase initialization for server-side
 const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
 const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+app.use(express.json({ limit: "25mb" }));
 
-  // Permit larger JSON payload parsing in case of base64 transfer or large requests
-  app.use(express.json({ limit: "25mb" }));
+const apiKey = process.env.GEMINI_API_KEY;
+const ai = apiKey
+  ? new GoogleGenAI({ apiKey, httpOptions: { headers: { "User-Agent": "aistudio-build" } } })
+  : null;
 
-  // Initialize Gemini client on the server side
-  const apiKey = process.env.GEMINI_API_KEY;
-  const ai = apiKey
-    ? new GoogleGenAI({
-        apiKey,
-        httpOptions: {
-          headers: {
-            "User-Agent": "aistudio-build",
-          },
-        },
-      })
-    : null;
+// ========== API ROUTES ==========
 
-  // ========== Live Check Endpoint ==========
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", geminiConfigured: !!ai });
-  });
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", geminiConfigured: !!ai });
+});
 
-  // ========== API to fetch dynamic data from Firestore ==========
-  app.get("/api/data", async (req, res) => {
+app.get("/api/data", async (req, res) => {
+  try {
+    const collectionsToFetch = ['properties', 'testimonials', 'blogs', 'projects', 'popup_ads', 'users', 'messages'];
+    const dataDict: Record<string, any[]> = {};
+    for (const colName of collectionsToFetch) {
+      const querySnapshot = await getDocs(collection(db, colName));
+      const list: any[] = [];
+      querySnapshot.forEach((docSnap) => list.push(docSnap.data()));
+      dataDict[colName] = list;
+    }
+    let globalSettings = {};
     try {
-      const collectionsToFetch = ['properties', 'testimonials', 'blogs', 'projects', 'popup_ads', 'users', 'messages'];
-      const dataDict: Record<string, any[]> = {};
+      const docSnap = await getDoc(doc(db, 'settings', 'global'));
+      if (docSnap.exists()) globalSettings = docSnap.data();
+    } catch (err) { console.error("Failed to get global settings:", err); }
+    res.json({ ...dataDict, globalSettings });
+  } catch (err) {
+    console.error("Failed to fetch data:", err);
+    res.status(500).json({ error: "Failed to fetch data" });
+  }
+});
 
-      for (const colName of collectionsToFetch) {
-        const querySnapshot = await getDocs(collection(db, colName));
-        const list: any[] = [];
-        querySnapshot.forEach((docSnap) => {
-          list.push(docSnap.data());
-        });
-        dataDict[colName] = list;
+app.get("/api/export-zip", (req, res) => {
+  try {
+    const zip = new AdmZip();
+    const rootDir = process.cwd();
+    function scanAndAdd(currentPath: string, zipPathPrefix: string) {
+      const items = fs.readdirSync(currentPath);
+      for (const item of items) {
+        const fullPath = path.join(currentPath, item);
+        const relativeZipPath = zipPathPrefix ? `${zipPathPrefix}/${item}` : item;
+        if (
+          item === "node_modules" || item === ".git" || item === "dist" ||
+          item === ".cache" || item === "coverage" ||
+          (item.startsWith(".") && item !== ".gitignore" && item !== ".env.example" && item !== ".env" && item !== ".firebaserc") ||
+          item.endsWith(".zip")
+        ) continue;
+        const stat = fs.statSync(fullPath);
+        if (stat.isDirectory()) scanAndAdd(fullPath, relativeZipPath);
+        else zip.addFile(relativeZipPath, fs.readFileSync(fullPath));
       }
+    }
+    scanAndAdd(rootDir, "");
+    const zipBuffer = zip.toBuffer();
+    res.setHeader("Content-Disposition", 'attachment; filename="cappadocia-project-full-source.zip"');
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Length", zipBuffer.length.toString());
+    res.send(zipBuffer);
+  } catch (err) {
+    console.error("ZIP export failed:", err);
+    if (!res.headersSent) res.status(500).json({ error: "Failed to generate ZIP export" });
+  }
+});
 
-      // Fetch global settings
-      let globalSettings = {};
+app.post("/api/gemini", async (req, res) => {
+  try {
+    const { prompt, imageUrl } = req.body;
+    if (!prompt) return res.status(400).json({ error: "Prompt is required" });
+    if (!ai) return res.status(500).json({ error: "Gemini API Key not configured" });
+    const parts: any[] = [{ text: prompt }];
+    if (imageUrl) {
       try {
-        const docSnap = await getDoc(doc(db, 'settings', 'global'));
-        if (docSnap.exists()) {
-          globalSettings = docSnap.data();
-        }
-      } catch (err) {
-        console.error(`- Failed to retrieve global settings:`, err);
-      }
-
-      res.json({ ...dataDict, globalSettings });
-    } catch (err) {
-      console.error("Failed to fetch data from Firestore:", err);
-      res.status(500).json({ error: "Failed to fetch data" });
-    }
-  });
-
-  // ========== Export ZIP endpoint ==========
-  app.get("/api/export-zip", (req, res) => {
-    try {
-      const zip = new AdmZip();
-      const rootDir = process.cwd();
-      
-      // Recursive directory scanner adding files via buffer to prevent adm-zip path quirks
-      function scanAndAdd(currentPath: string, zipPathPrefix: string) {
-        const items = fs.readdirSync(currentPath);
-        for (const item of items) {
-          const fullPath = path.join(currentPath, item);
-          const relativeZipPath = zipPathPrefix ? `${zipPathPrefix}/${item}` : item;
-          
-          // Exclude bulky and temporary directories or hidden files
-          if (
-            item === "node_modules" || 
-            item === ".git" || 
-            item === "dist" || 
-            item === ".cache" ||
-            item === "coverage" ||
-            (item.startsWith(".") && item !== ".gitignore" && item !== ".env.example" && item !== ".env" && item !== ".firebaserc") || 
-            item.endsWith(".zip")
-          ) {
-            continue;
-          }
-          
-          const stat = fs.statSync(fullPath);
-          if (stat.isDirectory()) {
-            scanAndAdd(fullPath, relativeZipPath);
-          } else {
-            const fileBuffer = fs.readFileSync(fullPath);
-            zip.addFile(relativeZipPath, fileBuffer);
-          }
-        }
-      }
-
-      // Scan starting from the root directory
-      scanAndAdd(rootDir, "");
-
-      const zipBuffer = zip.toBuffer();
-      
-      res.setHeader("Content-Disposition", 'attachment; filename="cappadocia-project-full-source.zip"');
-      res.setHeader("Content-Type", "application/zip");
-      res.setHeader("Content-Length", zipBuffer.length.toString());
-      res.send(zipBuffer);
-    } catch (err) {
-      console.error("Failed to generate ZIP export:", err);
-      if (!res.headersSent) {
-        res.status(500).json({ error: "Failed to generate ZIP export: " + (err instanceof Error ? err.message : String(err)) });
+        const imgRes = await fetch(imageUrl);
+        if (!imgRes.ok) throw new Error(`Failed to retrieve image: ${imgRes.status}`);
+        const arrayBuffer = await imgRes.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
+        parts.push({ inlineData: { mimeType, data: buffer.toString("base64") } });
+      } catch (imgErr) {
+        return res.status(400).json({ error: `Failed to load image: ${imgErr instanceof Error ? imgErr.message : "Unknown error"}` });
       }
     }
-  });
+    const response = await ai.models.generateContent({ model: "gemini-3.5-flash", contents: { parts } });
+    res.json({ text: response.text });
+  } catch (err) {
+    console.error("Gemini error:", err);
+    res.status(500).json({ error: err instanceof Error ? err.message : "Gemini call failed" });
+  }
+});
 
-  // ========== AI Generation with Gemini ==========
-  app.post("/api/gemini", async (req: express.Request, res: express.Response) => {
-    try {
-      const { prompt, imageUrl } = req.body;
-
-      if (!prompt) {
-        return res.status(400).json({ error: "Prompt is required" });
-      }
-
-      if (!ai) {
-        return res.status(500).json({
-          error: "Gemini API Key is not configured in environment variables. Please set the GEMINI_API_KEY secret in Settings > Secrets.",
-        });
-      }
-
-      const parts: any[] = [{ text: prompt }];
-
-      if (imageUrl) {
-        try {
-          // Fetch image buffer from the Firebase Storage URL and feed to Gemini
-          const imgRes = await fetch(imageUrl);
-          if (!imgRes.ok) {
-            throw new Error(`Failed to retrieve image: ${imgRes.status} ${imgRes.statusText}`);
-          }
-          const arrayBuffer = await imgRes.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
-
-          parts.push({
-            inlineData: {
-              mimeType,
-              data: buffer.toString("base64"),
-            },
-          });
-        } catch (imgErr) {
-          console.error("Error loading image for Gemini:", imgErr);
-          return res.status(400).json({
-            error: `Failed to load image from Firebase Storage URL: ${imgErr instanceof Error ? imgErr.message : "Malformed image link"}`,
-          });
-        }
-      }
-
-      // Generate contents using gemini-3.5-flash as the default task model
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: { parts },
-      });
-
-      res.json({ text: response.text });
-    } catch (err) {
-      console.error("Gemini API integration error:", err);
-      res.status(500).json({
-        error: err instanceof Error ? err.message : "An error occurred during Gemini model call.",
-      });
+// ====== THE MISSING ROUTE ======
+app.post("/api/send-reply", async (req, res) => {
+  try {
+    const { recipientId, subject, body, senderId } = req.body;
+    if (!recipientId || !body) {
+      return res.status(400).json({ error: "Missing required fields: recipientId and body" });
     }
-  });
+    const messagesRef = collection(db, "messages");
+    const newMessage = {
+      to: recipientId,
+      from: senderId || "admin",
+      subject: subject || "",
+      body: body,
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+    const docRef = await addDoc(messagesRef, newMessage);
+    res.status(201).json({
+      success: true,
+      messageId: docRef.id,
+      message: "Reply sent successfully",
+    });
+  } catch (err) {
+    console.error("Error sending reply:", err);
+    res.status(500).json({ error: "Failed to send reply. Please try again later." });
+  }
+});
 
-  // ========== NEW: Send Reply (Admin → Client) ==========
-  app.post("/api/send-reply", async (req: express.Request, res: express.Response) => {
-    try {
-      const { recipientId, subject, body, senderId } = req.body;
+// ====== EXPORT FOR VERCEL ======
+export const handler = serverless(app);
 
-      // Basic validation
-      if (!recipientId || !body) {
-        return res.status(400).json({ error: "Missing required fields: recipientId and body" });
-      }
-
-      // Save the message to Firestore under "messages" collection
-      const messagesRef = collection(db, "messages");
-      const newMessage = {
-        to: recipientId,
-        from: senderId || "admin",        // default sender if not provided
-        subject: subject || "",
-        body: body,
-        timestamp: new Date().toISOString(),
-        read: false,
-        // You can add more fields as needed (e.g., type: 'reply')
-      };
-
-      const docRef = await addDoc(messagesRef, newMessage);
-
-      // Optionally, you could also trigger a push notification / email here
-
-      res.status(201).json({
-        success: true,
-        messageId: docRef.id,
-        message: "Reply sent successfully",
-      });
-    } catch (err) {
-      console.error("Error sending reply:", err);
-      res.status(500).json({ error: "Failed to send reply. Please try again later." });
-    }
-  });
-
-  // ========== Vite integration middleware ==========
-  if (process.env.NODE_ENV !== "production") {
+// ====== LOCAL DEVELOPMENT (optional) ======
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  const PORT = 3000;
+  (async () => {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req: express.Request, res: express.Response) => {
-      res.sendFile(path.join(distPath, "index.html"));
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Local dev server running on http://localhost:${PORT}`);
     });
-  }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server starting up on port ${PORT}`);
-  });
+  })();
 }
-
-startServer();
