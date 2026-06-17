@@ -596,10 +596,12 @@ export default function App() {
     safelyParseJSON<string[]>('cap_favorites', [])
   );
 
-  // Dynamic filter state
+  // Dynamic filter state – added price range
   const [searchLocation, setSearchLocation] = useState('');
   const [searchType, setSearchType] = useState('');
   const [searchBedrooms, setSearchBedrooms] = useState('');
+  const [searchMinPrice, setSearchMinPrice] = useState<number | ''>('');
+  const [searchMaxPrice, setSearchMaxPrice] = useState<number | ''>('');
   const [hoveredSubCity, setHoveredSubCity] = useState<string | null>(null);
 
   // Dropdown Open States and map toggles
@@ -859,6 +861,9 @@ export default function App() {
     );
   };
 
+  // ============================================================
+  // FILTERED PROPERTIES – now includes price range
+  // ============================================================
   const filteredProperties = properties.filter((p) => {
     const locMatch = searchLocation === '' || p.subCity.toLowerCase() === searchLocation.toLowerCase();
     const typeMatch = searchType === '' || p.type.toLowerCase() === searchType.toLowerCase();
@@ -871,7 +876,13 @@ export default function App() {
         bedMatch = p.bedrooms === Number(searchBedrooms);
       }
     }
-    return locMatch && typeMatch && bedMatch;
+
+    // Price range
+    let priceMatch = true;
+    if (searchMinPrice !== '' && p.price < searchMinPrice) priceMatch = false;
+    if (searchMaxPrice !== '' && p.price > searchMaxPrice) priceMatch = false;
+
+    return locMatch && typeMatch && bedMatch && priceMatch;
   });
 
   const handleSearchAction = () => {
@@ -883,6 +894,8 @@ export default function App() {
     setSearchLocation('');
     setSearchType('');
     setSearchBedrooms('');
+    setSearchMinPrice('');
+    setSearchMaxPrice('');
   };
 
   const CappadociaLogo = ({ className = "" }: { className?: string }) => {
@@ -1203,186 +1216,221 @@ export default function App() {
                       </div>
                     </div>
 
+                    {/* ============================================================
+                        HOME PAGE FILTER BAR – now with price range in a two‑row layout
+                        ============================================================ */}
                     <div className="absolute bottom-6 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 max-w-4xl w-full z-[45]">
-                      <div className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 grid grid-cols-1 md:grid-cols-4 gap-4 products-selector text-zinc-900 dark:text-zinc-100">
+                      <div className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4 text-zinc-900 dark:text-zinc-100">
                         
-                        <div className="space-y-1.5 relative">
-                          <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
-                            Location
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setLocDropdownOpen(!locDropdownOpen);
-                              setTypeDropdownOpen(false);
-                              setBedsDropdownOpen(false);
-                            }}
-                            className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
-                          >
-                            <span>{searchLocation ? searchLocation : 'All Locations'}</span>
-                            <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${locDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
-                          </button>
-                          
-                          <AnimatePresence>
-                            {locDropdownOpen && (
-                              <>
-                                <div className="fixed inset-0 z-30" onClick={() => setLocDropdownOpen(false)} />
-                                <motion.div
-                                  initial={{ opacity: 0, y: -4 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -4 }}
-                                  className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
-                                >
-                                  {[
-                                    { val: '', label: 'All Locations' },
-                                    ...allLocations.map((loc) => ({ val: loc, label: loc }))
-                                  ].map((opt) => (
-                                    <button
-                                      key={opt.val}
-                                      type="button"
-                                      onClick={() => {
-                                        setSearchLocation(opt.val);
-                                        setLocDropdownOpen(false);
-                                      }}
-                                      className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
-                                        searchLocation === opt.val
-                                          ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
-                                          : 'text-zinc-700 dark:text-zinc-300'
-                                      }`}
-                                    >
-                                      <span>{opt.label}</span>
-                                      {searchLocation === opt.val && <Check className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />}
-                                    </button>
-                                  ))}
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
+                        {/* First row: Location, Type, Bedrooms */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Location dropdown */}
+                          <div className="space-y-1.5 relative">
+                            <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
+                              Location
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLocDropdownOpen(!locDropdownOpen);
+                                setTypeDropdownOpen(false);
+                                setBedsDropdownOpen(false);
+                              }}
+                              className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
+                            >
+                              <span>{searchLocation ? searchLocation : 'All Locations'}</span>
+                              <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${locDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                            </button>
+                            
+                            <AnimatePresence>
+                              {locDropdownOpen && (
+                                <>
+                                  <div className="fixed inset-0 z-30" onClick={() => setLocDropdownOpen(false)} />
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -4 }}
+                                    className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
+                                  >
+                                    {[
+                                      { val: '', label: 'All Locations' },
+                                      ...allLocations.map((loc) => ({ val: loc, label: loc }))
+                                    ].map((opt) => (
+                                      <button
+                                        key={opt.val}
+                                        type="button"
+                                        onClick={() => {
+                                          setSearchLocation(opt.val);
+                                          setLocDropdownOpen(false);
+                                        }}
+                                        className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
+                                          searchLocation === opt.val
+                                            ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
+                                            : 'text-zinc-700 dark:text-zinc-300'
+                                        }`}
+                                      >
+                                        <span>{opt.label}</span>
+                                        {searchLocation === opt.val && <Check className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />}
+                                      </button>
+                                    ))}
+                                  </motion.div>
+                                </>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Property Type dropdown */}
+                          <div className="space-y-1.5 relative">
+                            <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
+                              Property Type
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                 setTypeDropdownOpen(!typeDropdownOpen);
+                                 setLocDropdownOpen(false);
+                                 setBedsDropdownOpen(false);
+                              }}
+                              className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
+                            >
+                              <span>{searchType ? (searchType === 'Luxury Villa' ? 'Villa' : searchType === 'Modern Penthouse' ? 'Penthouse' : searchType === 'Exclusive Apartment' ? 'Apartment' : searchType) : 'All Property Types'}</span>
+                              <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${typeDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                            </button>
+                            
+                            <AnimatePresence>
+                              {typeDropdownOpen && (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={() => setTypeDropdownOpen(false)} />
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -4 }}
+                                    className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
+                                  >
+                                    {[
+                                      { val: '', label: 'All Property Types' },
+                                      ...allTypes.map((t) => ({ val: t, label: t }))
+                                    ].map((opt) => (
+                                      <button
+                                        key={opt.val}
+                                        type="button"
+                                        onClick={() => {
+                                          setSearchType(opt.val);
+                                          setTypeDropdownOpen(false);
+                                        }}
+                                        className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
+                                          searchType === opt.val
+                                            ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
+                                            : 'text-zinc-700 dark:text-zinc-300'
+                                        }`}
+                                      >
+                                        <span>{opt.label}</span>
+                                        {searchType === opt.val && <Check className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />}
+                                      </button>
+                                    ))}
+                                  </motion.div>
+                                </>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Bedrooms dropdown */}
+                          <div className="space-y-1.5 relative">
+                            <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
+                              Bedrooms
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBedsDropdownOpen(!bedsDropdownOpen);
+                                setLocDropdownOpen(false);
+                                setTypeDropdownOpen(false);
+                              }}
+                              className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
+                            >
+                              <span>{searchBedrooms ? (searchBedrooms === '1' ? '1 Bedroom' : `${searchBedrooms} Bedrooms`) : 'All Bedrooms'}</span>
+                              <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${bedsDropdownOpen ? 'rotate-180 text-red-700' : ''}`} />
+                            </button>
+                            
+                            <AnimatePresence>
+                              {bedsDropdownOpen && (
+                                <>
+                                  <div className="fixed inset-0 z-40" onClick={() => setBedsDropdownOpen(false)} />
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -4 }}
+                                    className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
+                                  >
+                                    {[
+                                      { val: '', label: 'All Bedrooms' },
+                                      { val: '1', label: '1 Bedroom' },
+                                      { val: '2', label: '2 Bedrooms' },
+                                      { val: '3', label: '3 Bedrooms' },
+                                      { val: '4', label: '4 Bedrooms' },
+                                      { val: '5+', label: '5+ Bedrooms' },
+                                    ].map((opt) => (
+                                      <button
+                                        key={opt.val}
+                                        type="button"
+                                        onClick={() => {
+                                          setSearchBedrooms(opt.val);
+                                          setBedsDropdownOpen(false);
+                                        }}
+                                        className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
+                                          searchBedrooms === opt.val
+                                            ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
+                                            : 'text-zinc-700 dark:text-zinc-300'
+                                        }`}
+                                      >
+                                        <span>{opt.label}</span>
+                                        {searchBedrooms === opt.val && <Check className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />}
+                                      </button>
+                                    ))}
+                                  </motion.div>
+                                </>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         </div>
 
-                        <div className="space-y-1.5 relative">
-                          <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
-                            Property Type
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                               setTypeDropdownOpen(!typeDropdownOpen);
-                               setLocDropdownOpen(false);
-                               setBedsDropdownOpen(false);
-                            }}
-                            className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
-                          >
-                            <span>{searchType ? (searchType === 'Luxury Villa' ? 'Villa' : searchType === 'Modern Penthouse' ? 'Penthouse' : searchType === 'Exclusive Apartment' ? 'Apartment' : searchType) : 'All Property Types'}</span>
-                            <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${typeDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
-                          </button>
-                          
-                          <AnimatePresence>
-                            {typeDropdownOpen && (
-                              <>
-                                <div className="fixed inset-0 z-40" onClick={() => setTypeDropdownOpen(false)} />
-                                <motion.div
-                                  initial={{ opacity: 0, y: -4 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -4 }}
-                                  className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
-                                >
-                                  {[
-                                    { val: '', label: 'All Property Types' },
-                                    ...allTypes.map((t) => ({ val: t, label: t }))
-                                  ].map((opt) => (
-                                    <button
-                                      key={opt.val}
-                                      type="button"
-                                      onClick={() => {
-                                        setSearchType(opt.val);
-                                        setTypeDropdownOpen(false);
-                                      }}
-                                      className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
-                                        searchType === opt.val
-                                          ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
-                                          : 'text-zinc-700 dark:text-zinc-300'
-                                      }`}
-                                    >
-                                      <span>{opt.label}</span>
-                                      {searchType === opt.val && <Check className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />}
-                                    </button>
-                                  ))}
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                        {/* Second row: Price range + Search button */}
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                          <div className="md:col-span-3 space-y-1.5">
+                            <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
+                              Price (ETB)
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                placeholder="Min"
+                                value={searchMinPrice}
+                                onChange={(e) => setSearchMinPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                                className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
+                              />
+                              <span className="text-zinc-400 text-xs font-bold">–</span>
+                              <input
+                                type="number"
+                                placeholder="Max"
+                                value={searchMaxPrice}
+                                onChange={(e) => setSearchMaxPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                                className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
+                              />
+                            </div>
+                          </div>
 
-                        <div className="space-y-1.5 relative">
-                          <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
-                            Bedrooms
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setBedsDropdownOpen(!bedsDropdownOpen);
-                              setLocDropdownOpen(false);
-                              setTypeDropdownOpen(false);
-                            }}
-                            className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
-                          >
-                            <span>{searchBedrooms ? (searchBedrooms === '1' ? '1 Bedroom' : `${searchBedrooms} Bedrooms`) : 'All Bedrooms'}</span>
-                            <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${bedsDropdownOpen ? 'rotate-180 text-red-700' : ''}`} />
-                          </button>
-                          
-                          <AnimatePresence>
-                            {bedsDropdownOpen && (
-                              <>
-                                <div className="fixed inset-0 z-40" onClick={() => setBedsDropdownOpen(false)} />
-                                <motion.div
-                                  initial={{ opacity: 0, y: -4 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -4 }}
-                                  className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
-                                >
-                                  {[
-                                    { val: '', label: 'All Bedrooms' },
-                                    { val: '1', label: '1 Bedroom' },
-                                    { val: '2', label: '2 Bedrooms' },
-                                    { val: '3', label: '3 Bedrooms' },
-                                    { val: '4', label: '4 Bedrooms' },
-                                    { val: '5+', label: '5+ Bedrooms' },
-                                  ].map((opt) => (
-                                    <button
-                                      key={opt.val}
-                                      type="button"
-                                      onClick={() => {
-                                        setSearchBedrooms(opt.val);
-                                        setBedsDropdownOpen(false);
-                                      }}
-                                      className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
-                                        searchBedrooms === opt.val
-                                          ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
-                                          : 'text-zinc-700 dark:text-zinc-300'
-                                      }`}
-                                    >
-                                      <span>{opt.label}</span>
-                                      {searchBedrooms === opt.val && <Check className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />}
-                                    </button>
-                                  ))}
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
-                        </div>
-
-                        <div className="pt-5 md:pt-4">
-                          <button
-                            onClick={() => {
-                              setActiveTab('properties');
-                              window.scrollTo({ top: 600, behavior: 'smooth' });
-                            }}
-                            className="w-full h-[46px] bg-[#003B95] text-white dark:text-zinc-100 rounded-xl text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#002f75] transition flex items-center justify-center gap-2 cursor-pointer font-sans"
-                          >
-                            <Search className="w-4 h-4" />
-                            Search
-                          </button>
+                          <div className="md:col-span-2 flex items-end">
+                            <button
+                              onClick={() => {
+                                setActiveTab('properties');
+                                window.scrollTo({ top: 600, behavior: 'smooth' });
+                              }}
+                              className="w-full h-[46px] bg-[#003B95] text-white dark:text-zinc-100 rounded-xl text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#002f75] transition flex items-center justify-center gap-2 cursor-pointer font-sans"
+                            >
+                              <Search className="w-4 h-4" />
+                              Search
+                            </button>
+                          </div>
                         </div>
 
                       </div>
@@ -1579,7 +1627,10 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="p-6 rounded-2xl border bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-10 relative z-30">
+                  {/* ============================================================
+                      PROPERTIES PAGE FILTER BAR – now includes price range as an extra column
+                      ============================================================ */}
+                  <div className="p-6 rounded-2xl border bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-10 relative z-30">
                     
                     <div className="space-y-1.5 relative">
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">
@@ -1745,6 +1796,30 @@ export default function App() {
                           </>
                         )}
                       </AnimatePresence>
+                    </div>
+
+                    {/* Price Range */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">
+                        Price (ETB)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={searchMinPrice}
+                          onChange={(e) => setSearchMinPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                          className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
+                        />
+                        <span className="text-zinc-400 text-xs">–</span>
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={searchMaxPrice}
+                          onChange={(e) => setSearchMaxPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                          className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
+                        />
+                      </div>
                     </div>
 
                     <div>
