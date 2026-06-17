@@ -1237,16 +1237,15 @@ export default function App() {
                     </div>
 
                     {/* ============================================================
-                        HOME PAGE FILTER BAR – with price dropdown
+                        HOME PAGE FILTER BAR – SINGLE ROW WITH 5 COLUMNS
                         ============================================================ */}
                     <div className="absolute bottom-6 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 max-w-4xl w-full z-[45]">
-                      <div className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-4 text-zinc-900 dark:text-zinc-100">
+                      <div className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-4 text-zinc-900 dark:text-zinc-100">
                         
-                        {/* First row: Location, Type, Bedrooms */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {/* Location dropdown */}
-                          <div className="space-y-1.5 relative">
-                            <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
+                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
+                          {/* 1. Location dropdown */}
+                          <div className="space-y-1 relative">
+                            <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
                               Location
                             </label>
                             <button
@@ -1257,12 +1256,11 @@ export default function App() {
                                 setBedsDropdownOpen(false);
                                 setPriceDropdownOpen(false);
                               }}
-                              className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
+                              className="w-full p-2.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left h-[42px]"
                             >
-                              <span>{searchLocation ? searchLocation : 'All Locations'}</span>
-                              <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${locDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                              <span className="truncate">{searchLocation ? searchLocation : 'All Locations'}</span>
+                              <ChevronDown className={`w-4 h-4 ml-1 flex-shrink-0 transition-transform duration-200 text-zinc-400 ${locDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
                             </button>
-                            
                             <AnimatePresence>
                               {locDropdownOpen && (
                                 <>
@@ -1271,7 +1269,7 @@ export default function App() {
                                     initial={{ opacity: 0, y: -4 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -4 }}
-                                    className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
+                                    className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
                                   >
                                     {[
                                       { val: '', label: 'All Locations' },
@@ -1300,25 +1298,24 @@ export default function App() {
                             </AnimatePresence>
                           </div>
 
-                          {/* Property Type dropdown */}
-                          <div className="space-y-1.5 relative">
-                            <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
-                              Property Type
+                          {/* 2. Property Type dropdown */}
+                          <div className="space-y-1 relative">
+                            <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
+                              Type
                             </label>
                             <button
                               type="button"
                               onClick={() => {
-                                 setTypeDropdownOpen(!typeDropdownOpen);
-                                 setLocDropdownOpen(false);
-                                 setBedsDropdownOpen(false);
-                                 setPriceDropdownOpen(false);
+                                setTypeDropdownOpen(!typeDropdownOpen);
+                                setLocDropdownOpen(false);
+                                setBedsDropdownOpen(false);
+                                setPriceDropdownOpen(false);
                               }}
-                              className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
+                              className="w-full p-2.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left h-[42px]"
                             >
-                              <span>{searchType ? (searchType === 'Luxury Villa' ? 'Villa' : searchType === 'Modern Penthouse' ? 'Penthouse' : searchType === 'Exclusive Apartment' ? 'Apartment' : searchType) : 'All Property Types'}</span>
-                              <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${typeDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                              <span className="truncate">{searchType ? (searchType === 'Luxury Villa' ? 'Villa' : searchType === 'Modern Penthouse' ? 'Penthouse' : searchType === 'Exclusive Apartment' ? 'Apartment' : searchType) : 'All Types'}</span>
+                              <ChevronDown className={`w-4 h-4 ml-1 flex-shrink-0 transition-transform duration-200 text-zinc-400 ${typeDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
                             </button>
-                            
                             <AnimatePresence>
                               {typeDropdownOpen && (
                                 <>
@@ -1327,10 +1324,10 @@ export default function App() {
                                     initial={{ opacity: 0, y: -4 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -4 }}
-                                    className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
+                                    className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
                                   >
                                     {[
-                                      { val: '', label: 'All Property Types' },
+                                      { val: '', label: 'All Types' },
                                       ...allTypes.map((t) => ({ val: t, label: t }))
                                     ].map((opt) => (
                                       <button
@@ -1356,10 +1353,10 @@ export default function App() {
                             </AnimatePresence>
                           </div>
 
-                          {/* Bedrooms dropdown */}
-                          <div className="space-y-1.5 relative">
-                            <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
-                              Bedrooms
+                          {/* 3. Bedrooms dropdown */}
+                          <div className="space-y-1 relative">
+                            <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
+                              Beds
                             </label>
                             <button
                               type="button"
@@ -1369,12 +1366,11 @@ export default function App() {
                                 setTypeDropdownOpen(false);
                                 setPriceDropdownOpen(false);
                               }}
-                              className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
+                              className="w-full p-2.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left h-[42px]"
                             >
-                              <span>{searchBedrooms ? (searchBedrooms === '1' ? '1 Bedroom' : `${searchBedrooms} Bedrooms`) : 'All Bedrooms'}</span>
-                              <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${bedsDropdownOpen ? 'rotate-180 text-red-700' : ''}`} />
+                              <span className="truncate">{searchBedrooms ? (searchBedrooms === '1' ? '1 Bed' : `${searchBedrooms} Beds`) : 'All Beds'}</span>
+                              <ChevronDown className={`w-4 h-4 ml-1 flex-shrink-0 transition-transform duration-200 text-zinc-400 ${bedsDropdownOpen ? 'rotate-180 text-red-700' : ''}`} />
                             </button>
-                            
                             <AnimatePresence>
                               {bedsDropdownOpen && (
                                 <>
@@ -1383,15 +1379,15 @@ export default function App() {
                                     initial={{ opacity: 0, y: -4 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -4 }}
-                                    className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
+                                    className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
                                   >
                                     {[
-                                      { val: '', label: 'All Bedrooms' },
-                                      { val: '1', label: '1 Bedroom' },
-                                      { val: '2', label: '2 Bedrooms' },
-                                      { val: '3', label: '3 Bedrooms' },
-                                      { val: '4', label: '4 Bedrooms' },
-                                      { val: '5+', label: '5+ Bedrooms' },
+                                      { val: '', label: 'All Beds' },
+                                      { val: '1', label: '1 Bed' },
+                                      { val: '2', label: '2 Beds' },
+                                      { val: '3', label: '3 Beds' },
+                                      { val: '4', label: '4 Beds' },
+                                      { val: '5+', label: '5+ Beds' },
                                     ].map((opt) => (
                                       <button
                                         key={opt.val}
@@ -1415,13 +1411,11 @@ export default function App() {
                               )}
                             </AnimatePresence>
                           </div>
-                        </div>
 
-                        {/* Second row: Price dropdown + Search button */}
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                          <div className="md:col-span-3 space-y-1.5 relative">
-                            <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
-                              Price (ETB)
+                          {/* 4. Price dropdown */}
+                          <div className="space-y-1 relative">
+                            <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
+                              Price
                             </label>
                             <button
                               type="button"
@@ -1431,14 +1425,14 @@ export default function App() {
                                 setTypeDropdownOpen(false);
                                 setBedsDropdownOpen(false);
                               }}
-                              className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
+                              className="w-full p-2.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left h-[42px]"
                             >
-                              <span>
+                              <span className="truncate">
                                 {searchMinPrice !== '' || searchMaxPrice !== '' 
-                                  ? `${searchMinPrice || '0'} - ${searchMaxPrice || '∞'} ETB` 
+                                  ? `${searchMinPrice || '0'} - ${searchMaxPrice || '∞'}` 
                                   : 'All Prices'}
                               </span>
-                              <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${priceDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                              <ChevronDown className={`w-4 h-4 ml-1 flex-shrink-0 transition-transform duration-200 text-zinc-400 ${priceDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
                             </button>
 
                             <AnimatePresence>
@@ -1449,28 +1443,28 @@ export default function App() {
                                     initial={{ opacity: 0, y: -4 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -4 }}
-                                    className="absolute left-0 right-0 mt-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl z-50 p-4 space-y-3"
+                                    className="absolute left-0 right-0 mt-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl z-50 p-3 space-y-2 min-w-[200px]"
                                   >
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2">
                                       <div className="flex-1">
-                                        <label className="block text-[9px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-1">Min</label>
+                                        <label className="block text-[8px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-0.5">Min</label>
                                         <input
                                           type="number"
                                           placeholder="Min"
                                           value={searchMinPrice}
                                           onChange={(e) => setSearchMinPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                                          className="w-full p-2.5 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
+                                          className="w-full p-2 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
                                         />
                                       </div>
-                                      <span className="text-zinc-400 font-bold">–</span>
+                                      <span className="text-zinc-400 font-bold text-xs">–</span>
                                       <div className="flex-1">
-                                        <label className="block text-[9px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-1">Max</label>
+                                        <label className="block text-[8px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-0.5">Max</label>
                                         <input
                                           type="number"
                                           placeholder="Max"
                                           value={searchMaxPrice}
                                           onChange={(e) => setSearchMaxPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                                          className="w-full p-2.5 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
+                                          className="w-full p-2 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
                                         />
                                       </div>
                                     </div>
@@ -1481,13 +1475,13 @@ export default function App() {
                                           setSearchMaxPrice('');
                                           setPriceDropdownOpen(false);
                                         }}
-                                        className="px-3 py-1.5 text-[10px] font-bold uppercase text-zinc-600 dark:text-zinc-400 hover:text-red-600 transition cursor-pointer"
+                                        className="px-3 py-1 text-[10px] font-bold uppercase text-zinc-600 dark:text-zinc-400 hover:text-red-600 transition cursor-pointer"
                                       >
                                         Clear
                                       </button>
                                       <button
                                         onClick={() => setPriceDropdownOpen(false)}
-                                        className="px-3 py-1.5 text-[10px] font-bold uppercase bg-red-600 text-white rounded-lg hover:bg-red-700 transition cursor-pointer"
+                                        className="px-3 py-1 text-[10px] font-bold uppercase bg-red-600 text-white rounded-lg hover:bg-red-700 transition cursor-pointer"
                                       >
                                         Apply
                                       </button>
@@ -1498,13 +1492,14 @@ export default function App() {
                             </AnimatePresence>
                           </div>
 
-                          <div className="md:col-span-2 flex items-end">
+                          {/* 5. Search button */}
+                          <div className="flex items-end pt-1 sm:pt-0">
                             <button
                               onClick={() => {
                                 setActiveTab('properties');
                                 window.scrollTo({ top: 600, behavior: 'smooth' });
                               }}
-                              className="w-full h-[46px] bg-[#003B95] text-white dark:text-zinc-100 rounded-xl text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#002f75] transition flex items-center justify-center gap-2 cursor-pointer font-sans"
+                              className="w-full h-[42px] bg-[#003B95] text-white dark:text-zinc-100 rounded-xl text-xs font-bold uppercase tracking-wider shadow-md hover:bg-[#002f75] transition flex items-center justify-center gap-2 cursor-pointer font-sans"
                             >
                               <Search className="w-4 h-4" />
                               Search
@@ -1706,10 +1701,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* ============================================================
-                      PROPERTIES PAGE FILTER BAR – with price dropdown
-                      ============================================================ */}
-                  <div className="p-6 rounded-2xl border bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-10 relative z-30">
+                  <div className="p-6 rounded-2xl border bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-10 relative z-30">
                     
                     <div className="space-y-1.5 relative">
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">
@@ -1728,7 +1720,6 @@ export default function App() {
                         <span>{searchLocation ? searchLocation : 'All Locations'}</span>
                         <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${locDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
                       </button>
-                      
                       <AnimatePresence>
                         {locDropdownOpen && (
                           <>
@@ -1783,7 +1774,6 @@ export default function App() {
                         <span>{searchType ? (searchType === 'Luxury Villa' ? 'Villa' : searchType === 'Modern Penthouse' ? 'Penthouse' : searchType === 'Exclusive Apartment' ? 'Apartment' : searchType) : 'All Property Types'}</span>
                         <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${typeDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
                       </button>
-                      
                       <AnimatePresence>
                         {typeDropdownOpen && (
                           <>
@@ -1838,7 +1828,6 @@ export default function App() {
                         <span>{searchBedrooms ? (searchBedrooms === '1' ? '1 Bedroom' : `${searchBedrooms} Bedrooms`) : 'All Bedrooms'}</span>
                         <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${bedsDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
                       </button>
-                      
                       <AnimatePresence>
                         {bedsDropdownOpen && (
                           <>
@@ -1880,7 +1869,6 @@ export default function App() {
                       </AnimatePresence>
                     </div>
 
-                    {/* Price Range as a dropdown (replaces the previous min/max inputs) */}
                     <div className="space-y-1.5 relative">
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">
                         Price (ETB)
@@ -2118,7 +2106,6 @@ export default function App() {
                               >
                                 <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-red-500 text-red-500' : ''}`} />
                               </button>
-                              
                               <div className="absolute bottom-3 left-3 flex gap-1 z-10">
                                 <button
                                   onClick={(e) => {
@@ -2134,7 +2121,6 @@ export default function App() {
                                   {comparePropertyIds.includes(p.id) ? '✓ Compare' : '+ Compare'}
                                 </button>
                               </div>
-
                               <span className={`absolute bottom-3 right-3 px-2 py-1 text-[9px] font-bold rounded shadow-sm ${ 'bg-white dark:bg-zinc-900 text-black dark:text-zinc-100'
                               }`}>
                                 {p.subCity}
