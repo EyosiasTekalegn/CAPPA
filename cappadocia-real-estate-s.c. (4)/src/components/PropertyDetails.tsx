@@ -16,7 +16,7 @@ import {
   Building,
   Layers
 } from 'lucide-react';
-import { Property, InquiryMessage } from '../types';
+import { Property, InquiryMessage, ContactButtonSettings } from '../types';
 
 interface PropertyDetailsProps {
   property: Property;
@@ -24,9 +24,17 @@ interface PropertyDetailsProps {
   onInquire: (inquiry: Omit<InquiryMessage, 'id' | 'date' | 'status'>) => void;
   isDarkMode: boolean;
   allAmenities?: string[];
+  contactButtonSettings?: ContactButtonSettings; // NEW
 }
 
-export default function PropertyDetails({ property, onBack, onInquire, isDarkMode, allAmenities = [] }: PropertyDetailsProps) {
+export default function PropertyDetails({ 
+  property, 
+  onBack, 
+  onInquire, 
+  isDarkMode, 
+  allAmenities = [],
+  contactButtonSettings = { action: 'both', linkUrl: '', linkLabel: 'Request Callback' } // default
+}: PropertyDetailsProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [activeRoomName, setActiveRoomName] = useState(property.virtualTour.rooms[0]?.name || '');
   const [tourPanning, setTourPanning] = useState(0);
@@ -62,7 +70,6 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
   const handleTourMouseMove = (e: React.MouseEvent) => {
     if (!isDraggingTour) return;
     const deltaX = e.clientX - startDragX.current;
-    // Calculate new pan degree loop (-180 to 180 or similar)
     const newPan = (currentTourVal.current + deltaX * 0.5) % 360;
     setTourPanning(newPan);
   };
@@ -71,7 +78,6 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
     setIsDraggingTour(false);
   };
 
-  // Touch handlers for mobile
   const handleTourTouchStart = (e: React.TouchEvent) => {
     if (e.touches[0]) {
       setIsDraggingTour(true);
@@ -96,21 +102,37 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !phone) return;
-    onInquire({
-      fullName,
-      email,
-      phone,
-      propertyTitle: property.title,
-      message,
-    });
-    setIsSubmitted(true);
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setFullName('');
-      setEmail('');
-      setPhone('');
-    }, 4000);
+
+    // Always send the inquiry message (if action includes send)
+    if (contactButtonSettings.action === 'send_message' || contactButtonSettings.action === 'both') {
+      onInquire({
+        fullName,
+        email,
+        phone,
+        propertyTitle: property.title,
+        message,
+      });
+      setIsSubmitted(true);
+      // Reset form after a short delay
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setFullName('');
+        setEmail('');
+        setPhone('');
+      }, 4000);
+    }
+
+    // If action includes open_link, open the link after submission (or immediately if only open_link)
+    if (contactButtonSettings.action === 'open_link' || contactButtonSettings.action === 'both') {
+      if (contactButtonSettings.linkUrl) {
+        // Open in new tab
+        window.open(contactButtonSettings.linkUrl, '_blank', 'noreferrer');
+      }
+    }
   };
+
+  // Determine button label
+  const buttonLabel = contactButtonSettings.linkLabel || 'Request Callback';
 
   return (
     <motion.div 
@@ -145,7 +167,6 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
               referrerPolicy="no-referrer"
             />
             
-            {/* Carousel navigation buttons */}
             {allImages.length > 1 && (
               <>
                 <button 
@@ -163,12 +184,10 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
               </>
             )}
 
-            {/* Pagination badge */}
             <div className="absolute bottom-4 right-4 bg-black dark:bg-zinc-50/70 text-white dark:text-zinc-100 px-3 py-1 rounded-md text-xs font-mono font-medium">
               {activeImageIndex + 1} / {allImages.length}
             </div>
 
-            {/* Property Status Badge */}
             <div className="absolute top-4 left-4 bg-red-600 text-white dark:text-zinc-100 text-xs tracking-wider uppercase font-bold px-3 py-1 rounded-md shadow-sm">
               {property.status}
             </div>
@@ -218,7 +237,6 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
               </div>
             </div>
 
-            {/* Grid of details with professional neutral outlines */}
             <div className={`grid grid-cols-2 gap-4 p-5 rounded-xl border ${ 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-800'
             }`}>
               <div className="space-y-1">
@@ -424,8 +442,6 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
             </div>
           )}
 
-
-
           {/* Interactive Virtual Staged 3D Tour */}
           {property.virtualTour && property.virtualTour.rooms.length > 0 && (
             <div className={`p-6 rounded-2xl border space-y-4 ${'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-800'
@@ -441,7 +457,6 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
                   </p>
                 </div>
                 
-                {/* Selector block */}
                 <div className="flex flex-wrap gap-1">
                   {property.virtualTour.rooms.map((room) => (
                     <button
@@ -459,7 +474,6 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
                 </div>
               </div>
 
-              {/* Viewer Window with Hotspots */}
               <div 
                 onMouseDown={handleTourMouseDown}
                 onMouseMove={handleTourMouseMove}
@@ -470,7 +484,6 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
                 onTouchEnd={handleTourTouchEnd}
                 className="relative aspect-video rounded-xl overflow-hidden bg-black dark:bg-zinc-50 select-none cursor-grab active:cursor-grabbing border border-black dark:border-zinc-700/30"
               >
-                {/* Simulated Panorama Backing Image with Translate Pan */}
                 <div 
                   className="absolute inset-0 w-[240%] h-full transition-transform duration-75 ease-out"
                   style={{ 
@@ -481,24 +494,19 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
                   }}
                 />
 
-                {/* Ambient Black Vignette */}
                 <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/50 via-transparent to-black/30" />
 
-                {/* Active Room Title Tag */}
                 <div className="absolute top-4 left-4 bg-black dark:bg-zinc-50/75 backdrop-blur-xs text-white dark:text-zinc-100 px-3 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
                   Viewing: {activeRoom.name}
                 </div>
 
-                {/* Help tip */}
                 <div className="absolute bottom-4 left-4 bg-black dark:bg-zinc-50/60 text-zinc-500 dark:text-zinc-400 px-3 py-1 rounded text-[10px] font-mono">
                    Drag side-to-side to inspect the layout structure
                 </div>
 
-                {/* Hotspots */}
                 <AnimatePresence mode="popLayout">
                   {activeRoom.hotspots.map((hotspot, hIdx) => {
-                    // Calculate visual hotspot coordinate adjusted for pan values
                     const basisX = hotspot.x + (tourPanning * 0.15);
                     const wrappedX = basisX < 5 ? 5 : basisX > 95 ? 95 : basisX;
 
@@ -544,7 +552,7 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
               </p>
             </div>
 
-            {isSubmitted ? (
+            {isSubmitted && (contactButtonSettings.action === 'send_message' || contactButtonSettings.action === 'both') ? (
               <motion.div 
                 initial={{ opacity: 0 }} 
                 animate={{ opacity: 1 }} 
@@ -623,7 +631,7 @@ export default function PropertyDetails({ property, onBack, onInquire, isDarkMod
                   className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider bg-red-600 hover:bg-red-600 text-white dark:text-zinc-100 transition duration-200 cursor-pointer shadow-md select-none"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  Request Callback
+                  {buttonLabel}
                 </button>
               </form>
             )}
