@@ -49,6 +49,7 @@ export interface Testimonial {
   rating: number;
   testimony: string;
   propertyPurchased: string;
+  image?: string; // NEW: client photo or testimonial image
 }
 
 export interface WhyChooseUsItem {
@@ -120,3 +121,9 @@ export interface ActivityLog {
   message: string;
 }
 
+// NEW: Contact Button Settings
+export interface ContactButtonSettings {
+  action: 'send_message' | 'open_link' | 'both';
+  linkUrl: string;
+  linkLabel: string; // button text
+}
