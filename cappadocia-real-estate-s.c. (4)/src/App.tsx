@@ -185,7 +185,6 @@ export default function App() {
     })
   );
 
-  // NEW: Contact Button Settings
   const [contactButtonSettings, setContactButtonSettings] = useState<ContactButtonSettings>(() => 
     safelyParseJSON<ContactButtonSettings>('cap_contact_button_settings', {
       action: 'both',
@@ -228,7 +227,6 @@ export default function App() {
     }
   };
 
-  // Firestore Sync Helper Function
   const syncCollectionToFirestore = async <T extends { id: string }>(
     collectionName: string,
     prev: T[],
@@ -407,7 +405,6 @@ export default function App() {
     };
   }, []);
 
-  // Core UI Control States
   const [activeTab, setActiveTab] = useState<'home' | 'properties' | 'projects' | 'favorites' | 'about' | 'blog' | 'contact' | 'admin'>('home');
   const [loggedInUser, setLoggedInUser] = useState<AdminUser | null>(null);
   const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
@@ -415,7 +412,6 @@ export default function App() {
     safelyParseJSON<boolean>('cap_dark_mode', false)
   );
 
-  // Routing for /admin
   useEffect(() => {
     const path = window.location.pathname;
     if (path === '/admin') {
@@ -449,17 +445,16 @@ export default function App() {
     testConnection();
   }, []);
 
-  // Check URL pathname for admin route initially
   useEffect(() => {
     if (window.location.pathname === '/admin') {
       setActiveTab('admin');
       window.history.replaceState({}, '', '/admin');
     }
   }, []);
+
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Custom dialog popup states and helper functions
   const [dialog, setDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -582,7 +577,6 @@ export default function App() {
     }
   };
 
-  // Compare states
   const [comparePropertyIds, setComparePropertyIds] = useState<string[]>([]);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
@@ -601,48 +595,38 @@ export default function App() {
     });
   };
 
-  // Favorites logic
   const [favorites, setFavorites] = useState<string[]>(() => 
     safelyParseJSON<string[]>('cap_favorites', [])
   );
 
-  // Dynamic filter state – added price range
   const [searchLocation, setSearchLocation] = useState('');
   const [searchType, setSearchType] = useState('');
   const [searchBedrooms, setSearchBedrooms] = useState('');
   const [searchMinPrice, setSearchMinPrice] = useState<number | ''>('');
   const [searchMaxPrice, setSearchMaxPrice] = useState<number | ''>('');
-
-  // NEW: Price dropdown state (for both home and properties)
   const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
 
   const [hoveredSubCity, setHoveredSubCity] = useState<string | null>(null);
 
-  // Dropdown Open States and map toggles
   const [mapDrawerOpen, setMapDrawerOpen] = useState(false);
   const [locDropdownOpen, setLocDropdownOpen] = useState(false);
   const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
   const [bedsDropdownOpen, setBedsDropdownOpen] = useState(false);
 
-  // Load More logic (Latest Listing component on Home tab)
   const [loadMoreClicks, setLoadMoreClicks] = useState(0);
   const [latestExpanded, setLatestExpanded] = useState(false);
 
-  // Active advertisement display controller
   const [currentActiveAd, setCurrentActiveAd] = useState<PopupAd | null>(null);
   const [adDismissed, setAdDismissed] = useState(false);
 
-  // Contact page states
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactMsg, setContactMsg] = useState('');
   const [contactSuccess, setContactSuccess] = useState(false);
 
-  // Selected blog modal view
   const [viewingBlog, setViewingBlog] = useState<Blog | null>(null);
 
-  // Dynamic Activity Logs State
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => 
     safelyParseJSON<ActivityLog[]>('cap_activity_logs', [
       { id: 'act-1', time: new Date(Date.now() - 3600000 * 2).toISOString(), type: 'system', message: 'System initialized successfully under security coordinates.' },
@@ -668,7 +652,6 @@ export default function App() {
     localStorage.setItem('cap_activity_logs', JSON.stringify(activityLogs));
   }, [activityLogs]);
 
-  // Synchronize dynamic updates directly into localStorage
   useEffect(() => {
     localStorage.setItem('cap_properties', JSON.stringify(properties));
   }, [properties]);
@@ -693,7 +676,6 @@ export default function App() {
     localStorage.setItem('cap_users', JSON.stringify(users));
   }, [users]);
 
-  // Administrative Session Inactivity Auto-Logout
   useEffect(() => {
     if (!loggedInUser) return;
 
@@ -786,7 +768,6 @@ export default function App() {
     localStorage.setItem('cap_contact_button_settings', JSON.stringify(contactButtonSettings));
   }, [contactButtonSettings]);
 
-  // Transparents scrolling header tracker
   useEffect(() => {
     const tracking = () => {
       setScrolled(window.scrollY > 40);
@@ -795,7 +776,6 @@ export default function App() {
     return () => window.removeEventListener('scroll', tracking);
   }, []);
 
-  // AUTOMATIC AD TRIGGERING CAPABILITIES
   useEffect(() => {
     const activeCampaign = popupAds.find(ad => ad.isActive);
     if (activeCampaign && !adDismissed && activeTab !== 'admin') {
@@ -806,7 +786,6 @@ export default function App() {
     }
   }, [popupAds, adDismissed, activeTab]);
 
-  // Expand / Tab Navigation Handler for Load More
   const handleLoadMoreLatest = () => {
     if (loadMoreClicks === 0) {
       setLatestExpanded(true);
@@ -879,9 +858,6 @@ export default function App() {
     );
   };
 
-  // ============================================================
-  // FILTERED PROPERTIES – now includes price range
-  // ============================================================
   const filteredProperties = properties.filter((p) => {
     const locMatch = searchLocation === '' || p.subCity.toLowerCase() === searchLocation.toLowerCase();
     const typeMatch = searchType === '' || p.type.toLowerCase() === searchType.toLowerCase();
@@ -895,7 +871,6 @@ export default function App() {
       }
     }
 
-    // Price range
     let priceMatch = true;
     if (searchMinPrice !== '' && p.price < searchMinPrice) priceMatch = false;
     if (searchMaxPrice !== '' && p.price > searchMaxPrice) priceMatch = false;
@@ -1014,7 +989,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* HEADER SECTION */}
       <header className={`fixed top-0 left-0 right-0 z-[60] transition-colors duration-300 py-3 ${
         isDarkMode 
           ? 'bg-zinc-950/95 border-b border-zinc-800 shadow-sm backdrop-blur-md text-white'
@@ -1024,7 +998,6 @@ export default function App() {
           
           <CappadociaLogo />
 
-          {/* Desktop Navigation - Admin button removed */}
           {activeTab !== 'admin' ? (
             <nav className="hidden lg:flex items-center gap-5 xl:gap-7">
               {(['home', 'about', 'properties', 'projects', 'blog', 'favorites', 'contact'] as const).map((tab) => (
@@ -1100,7 +1073,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* MOBILE NAV DRAWER - Admin button removed */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div 
@@ -1162,7 +1134,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* MAIN DISPLAY SYSTEM */}
       <main className="flex-grow pt-[100px] sm:pt-[115px]" id="primary-main-block">
 
         <AnimatePresence mode="wait">
@@ -1236,14 +1207,10 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* ============================================================
-                        HOME PAGE FILTER BAR – SINGLE ROW WITH 5 COLUMNS
-                        ============================================================ */}
                     <div className="absolute bottom-6 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 max-w-4xl w-full z-[45]">
                       <div className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-4 text-zinc-900 dark:text-zinc-100">
                         
                         <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
-                          {/* 1. Location dropdown */}
                           <div className="space-y-1 relative">
                             <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
                               Location
@@ -1298,7 +1265,6 @@ export default function App() {
                             </AnimatePresence>
                           </div>
 
-                          {/* 2. Property Type dropdown */}
                           <div className="space-y-1 relative">
                             <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
                               Type
@@ -1353,7 +1319,6 @@ export default function App() {
                             </AnimatePresence>
                           </div>
 
-                          {/* 3. Bedrooms dropdown */}
                           <div className="space-y-1 relative">
                             <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
                               Beds
@@ -1412,7 +1377,6 @@ export default function App() {
                             </AnimatePresence>
                           </div>
 
-                          {/* 4. Price dropdown */}
                           <div className="space-y-1 relative">
                             <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
                               Price
@@ -1492,7 +1456,6 @@ export default function App() {
                             </AnimatePresence>
                           </div>
 
-                          {/* 5. Search button */}
                           <div className="flex items-end pt-1 sm:pt-0">
                             <button
                               onClick={() => {
@@ -1651,60 +1614,59 @@ export default function App() {
                       </div>
                     </div>
                   </section>
-<section
-  className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 animate-fade-in"
-  id="homepage-buyer-feedback"
->
-  <div className="text-center max-w-2xl mx-auto space-y-2">
-    <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">
-      CLIENT TESTIMONIALS
-    </span>
-    <h2 className="text-2xl sm:text-3xl font-serif font-black text-black dark:text-zinc-100">
-      What Our Clients Say
-    </h2>
-    <p className="text-xs text-zinc-600 dark:text-zinc-400">
-      Read what families, elite diplomats, and institutional investors say about
-      Cappadocia S.C. quality.
-    </p>
-  </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-    {testimonials.map((t) => (
-      <div
-        key={t.id}
-        className="p-6 md:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col justify-between space-y-4"
-      >
-        {t.image && (
-          <div className="flex justify-center">
-            <img
-              src={t.image}
-              alt={t.clientName}
-              className="w-20 h-20 rounded-full object-cover border-2 border-zinc-200 dark:border-zinc-700"
-            />
-          </div>
-        )}
-        <div className="space-y-4">
-          <div className="flex gap-1">
-            {Array.from({ length: t.rating }).map((_, idy) => (
-              <Star key={idy} className="w-3.5 h-3.5 fill-current text-amber-500" />
-            ))}
-          </div>
-          <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 italic font-medium font-serif">
-            "{t.testimony}"
-          </p>
-        </div>
-        <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-4">
-          <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 tracking-tight">
-            {t.clientName}
-          </h4>
-          <p className="text-[9px] uppercase font-bold tracking-widest text-[#003B95] dark:text-red-500 mt-1">
-            {t.propertyPurchased}
-          </p>
-        </div>
-      </div>
-    ))}
-  </div>
-</section>
+                  <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 animate-fade-in" id="homepage-buyer-feedback">
+                    <div className="text-center max-w-2xl mx-auto space-y-2">
+                      <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">
+                        CLIENT TESTIMONIALS
+                      </span>
+                      <h2 className="text-2xl sm:text-3xl font-serif font-black text-black dark:text-zinc-100">
+                        What Our Clients Say
+                      </h2>
+                      <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                        Read what families, elite diplomats, and institutional investors say about Cappadocia S.C. quality.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {testimonials.map((t) => (
+                        <div
+                          key={t.id}
+                          className="p-6 md:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col justify-between space-y-4"
+                        >
+                          {t.image && (
+                            <div className="flex justify-center">
+                              <img
+                                src={t.image}
+                                alt={t.clientName}
+                                className="w-20 h-20 rounded-full object-cover border-2 border-zinc-200 dark:border-zinc-700"
+                              />
+                            </div>
+                          )}
+                          <div className="space-y-4">
+                            <div className="flex gap-1">
+                              {Array.from({ length: t.rating }).map((_, idy) => (
+                                <Star key={idy} className="w-3.5 h-3.5 fill-current text-amber-500" />
+                              ))}
+                            </div>
+                            <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 italic font-medium font-serif">
+                              "{t.testimony}"
+                            </p>
+                          </div>
+                          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-4">
+                            <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 tracking-tight">
+                              {t.clientName}
+                            </h4>
+                            <p className="text-[9px] uppercase font-bold tracking-widest text-[#003B95] dark:text-red-500 mt-1">
+                              {t.propertyPurchased}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              )}
 
               {activeTab === 'properties' && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" id="property-catalog-view">
@@ -2771,7 +2733,6 @@ export default function App() {
 
       </main>
 
-      {/* FLOATING COMPARE DOCK */}
       {comparePropertyIds.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-xl bg-black dark:bg-zinc-50 border border-black dark:border-zinc-700 shadow-2xl rounded-2xl p-4 text-white dark:text-zinc-100 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="flex items-center gap-3">
@@ -2801,7 +2762,6 @@ export default function App() {
         </div>
       )}
 
-      {/* COMPARE SIDE-BY-SIDE MODAL */}
       <AnimatePresence>
         {isCompareModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -2953,7 +2913,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* FOOTER COMPONENT */}
       {activeTab !== 'admin' && (
         <footer className={`py-12 sm:py-16 mt-12 sm:mt-16 border-t transition-colors duration-300 ${isDarkMode ? "border-zinc-900 bg-zinc-950 text-zinc-400" : "border-zinc-200 bg-white text-zinc-600"}`} id="primary-footer">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
@@ -3066,12 +3025,10 @@ export default function App() {
         </footer>
       )}
 
-      {/* Floating Contact/WhatsApp Dropdown */}
       {activeTab !== 'admin' && (
         <ContactDropdown isDarkMode={isDarkMode} globalSocials={globalSocials} contactInfo={contact} />
       )}
 
-      {/* Global Animated Custom Prompt / Dialog System */}
       <CustomPopup
         isOpen={dialog.isOpen}
         title={dialog.title}
