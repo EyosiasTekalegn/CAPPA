@@ -1651,8 +1651,7 @@ export default function App() {
                       </div>
                     </div>
                   </section>
-
-              <section
+<section
   className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 animate-fade-in"
   id="homepage-buyer-feedback"
 >
@@ -1675,7 +1674,6 @@ export default function App() {
         key={t.id}
         className="p-6 md:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col justify-between space-y-4"
       >
-        {/* Image – only show if it exists */}
         {t.image && (
           <div className="flex justify-center">
             <img
@@ -1685,21 +1683,16 @@ export default function App() {
             />
           </div>
         )}
-
         <div className="space-y-4">
           <div className="flex gap-1">
             {Array.from({ length: t.rating }).map((_, idy) => (
-              <Star
-                key={idy}
-                className="w-3.5 h-3.5 fill-current text-amber-500"
-              />
+              <Star key={idy} className="w-3.5 h-3.5 fill-current text-amber-500" />
             ))}
           </div>
           <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 italic font-medium font-serif">
             "{t.testimony}"
           </p>
         </div>
-
         <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-4">
           <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 tracking-tight">
             {t.clientName}
