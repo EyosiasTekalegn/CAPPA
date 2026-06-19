@@ -729,24 +729,24 @@ const [testImage, setTestImage] = useState(""); // only once
   // ============================================================
   // TESTIMONIAL HANDLERS
   // ============================================================
-  const handleSaveTestimonial = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canEditCore) return;
-    const newT: Testimonial = {
-      id: `t-${Math.floor(Math.random() * 90000 + 10000)}`,
-      clientName: testClient,
-      rating: Number(testRating),
-      testimony: testText,
-      propertyPurchased: testPurchased,
-      image: testImage || undefined,
-    };
-    setTestimonials((prev) => [...prev, newT]);
-    setIsAddingTestimonial(false);
-    setTestClient("");
-    setTestText("");
-    setTestPurchased("Executive Suite CMC");
-    setTestImage("");
+const handleSaveTestimonial = (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!canEditCore) return;
+  const newT: Testimonial = {
+    id: `t-${Math.floor(Math.random() * 90000 + 10000)}`,
+    clientName: testClient,
+    rating: Number(testRating),
+    testimony: testText,
+    propertyPurchased: testPurchased,
+    image: testImage || undefined,
   };
+  setTestimonials((prev) => [...prev, newT]);
+  setIsAddingTestimonial(false);
+  setTestClient("");
+  setTestText("");
+  setTestPurchased("Executive Suite CMC");
+  setTestImage(""); // clear after save
+};
 
   const handleDeleteTestimonial = (id: string) => {
     if (!canEditCore) return;
