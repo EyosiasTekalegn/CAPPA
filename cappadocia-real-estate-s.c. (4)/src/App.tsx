@@ -1664,28 +1664,37 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {testimonials.map((t) => ( ... ))}
-                        <div key={t.id} className="p-6 md:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col justify-between space-y-4">
-                          <div className="space-y-4">
-                            <div className="flex gap-1">
-                              {Array.from({ length: t.rating }).map((_, idy) => (
-                                <Star key={idy} className="w-3.5 h-3.5 fill-current text-amber-500" />
-                              ))}
-                            </div>
-                            <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 italic font-medium font-serif">
-                              "{t.testimony}"
-                            </p>
-                          </div>
-                          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-4">
-                            <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 tracking-tight">{t.clientName}</h4>
-                            <p className="text-[9px] uppercase font-bold tracking-widest text-[#003B95] dark:text-red-500 mt-1">{t.propertyPurchased}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-              )}
+  {testimonials.map((t) => (
+    <div key={t.id} className="p-6 md:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col justify-between space-y-4">
+      
+      {/* ⬇️ ADD THIS IMAGE SECTION ⬇️ */}
+      {t.image && (
+        <div className="flex justify-center mb-2">
+          <img
+            src={t.image}
+            alt={t.clientName}
+            className="w-20 h-20 rounded-full object-cover border-2 border-zinc-200 dark:border-zinc-700"
+          />
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex gap-1">
+          {Array.from({ length: t.rating }).map((_, idy) => (
+            <Star key={idy} className="w-3.5 h-3.5 fill-current text-amber-500" />
+          ))}
+        </div>
+        <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 italic font-medium font-serif">
+          "{t.testimony}"
+        </p>
+      </div>
+      <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-4">
+        <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 tracking-tight">{t.clientName}</h4>
+        <p className="text-[9px] uppercase font-bold tracking-widest text-[#003B95] dark:text-red-500 mt-1">{t.propertyPurchased}</p>
+      </div>
+    </div>
+  ))}
+</div>
 
               {activeTab === 'properties' && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" id="property-catalog-view">
