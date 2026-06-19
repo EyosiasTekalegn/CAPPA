@@ -1632,18 +1632,18 @@ export default function App() {
                       {testimonials.map((t) => (
                         <div
                           key={t.id}
-                          className="p-6 md:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col justify-between space-y-4"
+                          className="p-4 md:p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col justify-between space-y-3"
                         >
                           {t.image && (
                             <div className="flex justify-center">
                               <img
                                 src={t.image}
                                 alt={t.clientName}
-                                className="w-20 h-20 rounded-full object-cover border-2 border-zinc-200 dark:border-zinc-700"
+                                className="w-32 h-32 rounded-full object-cover border-4 border-zinc-200 dark:border-zinc-700"
                               />
                             </div>
                           )}
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             <div className="flex gap-1">
                               {Array.from({ length: t.rating }).map((_, idy) => (
                                 <Star key={idy} className="w-3.5 h-3.5 fill-current text-amber-500" />
@@ -1653,7 +1653,7 @@ export default function App() {
                               "{t.testimony}"
                             </p>
                           </div>
-                          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-4">
+                          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 mt-2">
                             <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 tracking-tight">
                               {t.clientName}
                             </h4>
@@ -2392,38 +2392,6 @@ export default function App() {
                       ))}
                     </div>
                   </div>
-
-                  <div className="space-y-8 pt-8 border-t border-black dark:border-zinc-700">
-                    <div className="text-center max-w-2xl mx-auto space-y-2">
-                      <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">Client Experiences</span>
-                      <h2 className={`text-2xl sm:text-3xl font-serif font-bold ${'text-black dark:text-zinc-100'}`}>
-                         Verified Buyer Feedback
-                      </h2>
-                      <p className="text-xs text-zinc-600 dark:text-zinc-400">Read what families and institutional investors have to say about our delivery and build quality.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {testimonials.map((t) => (
-                        <div key={t.id} className={`p-6 md:p-8 rounded-2xl border space-y-4 flex flex-col justify-between ${'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'}`}>
-                          <div className="space-y-4">
-                            <div className="flex gap-1">
-                              {Array.from({ length: t.rating }).map((_, idx) => (
-                                <Star key={idx} className="w-3.5 h-3.5 fill-current text-[#DC2626]" />
-                              ))}
-                            </div>
-                            <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 italic font-medium font-serif">
-                              "{t.testimony}"
-                            </p>
-                          </div>
-                          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 mt-4">
-                            <h4 className="font-bold text-sm text-black dark:text-zinc-100 font-sans tracking-tight">{t.clientName}</h4>
-                            <p className="text-[10px] uppercase font-bold tracking-widest text-[#003B95] mt-1">{t.propertyPurchased}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                 </div>
               )}
 
