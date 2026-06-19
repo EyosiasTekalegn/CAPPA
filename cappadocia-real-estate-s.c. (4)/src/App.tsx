@@ -1662,6 +1662,7 @@ export default function App() {
                         Read what families, elite diplomats, and institutional investors say about Cappadocia S.C. quality.
                       </p>
                     </div>
+                    </section>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
   {testimonials.map((t) => (
