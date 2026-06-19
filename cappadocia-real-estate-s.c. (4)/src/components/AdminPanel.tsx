@@ -352,13 +352,12 @@ export default function AdminPanel({
   // ============================================================
   // TESTIMONIAL FORM STATE
   // ============================================================
-  const [isAddingTestimonial, setIsAddingTestimonial] = useState(false);
-  const [testClient, setTestClient] = useState("");
-  const [testRating, setTestRating] = useState(5);
-  const [testText, setTestText] = useState("");
-  const [testPurchased, setTestPurchased] = useState("Executive Suite CMC");
-  const [testImage, setTestImage] = useState("");
-
+ const [isAddingTestimonial, setIsAddingTestimonial] = useState(false);
+const [testClient, setTestClient] = useState("");
+const [testRating, setTestRating] = useState(5);
+const [testText, setTestText] = useState("");
+const [testPurchased, setTestPurchased] = useState("Executive Suite CMC");
+const [testImage, setTestImage] = useState(""); // only once
   // ============================================================
   // ADS FORM STATE
   // ============================================================
