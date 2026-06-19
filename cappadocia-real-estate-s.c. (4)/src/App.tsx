@@ -1664,7 +1664,7 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {testimonials.slice(0, 3).map((t) => (
+                      {testimonials.map((t) => ( ... ))}
                         <div key={t.id} className="p-6 md:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col justify-between space-y-4">
                           <div className="space-y-4">
                             <div className="flex gap-1">
