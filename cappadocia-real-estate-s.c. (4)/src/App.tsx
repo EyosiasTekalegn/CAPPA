@@ -602,9 +602,7 @@ export default function App() {
   const [searchLocation, setSearchLocation] = useState('');
   const [searchType, setSearchType] = useState('');
   const [searchBedrooms, setSearchBedrooms] = useState('');
-  // NEW: replace min/max price with a single range selector
- const [searchPriceRange, setSearchPriceRange] = useState<string>(''); // '' = all, '4-6', '6-10', '10-20', '20+'
-const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
+  const [searchPriceRange, setSearchPriceRange] = useState<string>(''); // '' = all, '4-6', '6-10', '10-20', '20+'
   const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
 
   const [hoveredSubCity, setHoveredSubCity] = useState<string | null>(null);
@@ -899,7 +897,7 @@ const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
     setSearchLocation('');
     setSearchType('');
     setSearchBedrooms('');
-    setSearchPriceRange(''); // clear price range
+    setSearchPriceRange('');
     setPriceDropdownOpen(false);
   };
 
@@ -1388,74 +1386,73 @@ const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
                             </AnimatePresence>
                           </div>
 
-                          {/* NEW: Price Range Buttons */}
+                          {/* PRICE DROPDOWN (matching Location/Type/Beds) */}
                           <div className="space-y-1 relative">
-  <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
-    Price
-  </label>
-  <button
-    type="button"
-    onClick={() => {
-      setPriceDropdownOpen(!priceDropdownOpen);
-      setLocDropdownOpen(false);
-      setTypeDropdownOpen(false);
-      setBedsDropdownOpen(false);
-    }}
-    className="w-full p-2.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left h-[42px]"
-  >
-    <span className="truncate">
-      {searchPriceRange === '' 
-        ? 'All Prices' 
-        : searchPriceRange === '4-6' 
-          ? '4 – 6 Million' 
-          : searchPriceRange === '6-10' 
-            ? '6 – 10 Million' 
-            : searchPriceRange === '10-20' 
-              ? '10 – 20 Million' 
-              : '20 Million+'}
-    </span>
-    <ChevronDown className={`w-4 h-4 ml-1 flex-shrink-0 transition-transform duration-200 text-zinc-400 ${priceDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
-  </button>
-  
-  <AnimatePresence>
-    {priceDropdownOpen && (
-      <>
-        <div className="fixed inset-0 z-30" onClick={() => setPriceDropdownOpen(false)} />
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
-        >
-          {[
-            { value: '', label: 'All Prices' },
-            { value: '4-6', label: '4 – 6 Million' },
-            { value: '6-10', label: '6 – 10 Million' },
-            { value: '10-20', label: '10 – 20 Million' },
-            { value: '20+', label: '20 Million+' },
-          ].map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                setSearchPriceRange(opt.value);
-                setPriceDropdownOpen(false);
-              }}
-              className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
-                searchPriceRange === opt.value
-                  ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
-                  : 'text-zinc-700 dark:text-zinc-300'
-              }`}
-            >
-              <span>{opt.label}</span>
-              {searchPriceRange === opt.value && <Check className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />}
-            </button>
-          ))}
-        </motion.div>
-      </>
-    )}
-  </AnimatePresence>
-</div>
+                            <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
+                              Price
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPriceDropdownOpen(!priceDropdownOpen);
+                                setLocDropdownOpen(false);
+                                setTypeDropdownOpen(false);
+                                setBedsDropdownOpen(false);
+                              }}
+                              className="w-full p-2.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left h-[42px]"
+                            >
+                              <span className="truncate">
+                                {searchPriceRange === '' 
+                                  ? 'All Prices' 
+                                  : searchPriceRange === '4-6' 
+                                    ? '4 – 6 Million' 
+                                    : searchPriceRange === '6-10' 
+                                      ? '6 – 10 Million' 
+                                      : searchPriceRange === '10-20' 
+                                        ? '10 – 20 Million' 
+                                        : '20 Million+'}
+                              </span>
+                              <ChevronDown className={`w-4 h-4 ml-1 flex-shrink-0 transition-transform duration-200 text-zinc-400 ${priceDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                            </button>
+                            <AnimatePresence>
+                              {priceDropdownOpen && (
+                                <>
+                                  <div className="fixed inset-0 z-30" onClick={() => setPriceDropdownOpen(false)} />
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -4 }}
+                                    className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
+                                  >
+                                    {[
+                                      { value: '', label: 'All Prices' },
+                                      { value: '4-6', label: '4 – 6 Million' },
+                                      { value: '6-10', label: '6 – 10 Million' },
+                                      { value: '10-20', label: '10 – 20 Million' },
+                                      { value: '20+', label: '20 Million+' },
+                                    ].map((opt) => (
+                                      <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => {
+                                          setSearchPriceRange(opt.value);
+                                          setPriceDropdownOpen(false);
+                                        }}
+                                        className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
+                                          searchPriceRange === opt.value
+                                            ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
+                                            : 'text-zinc-700 dark:text-zinc-300'
+                                        }`}
+                                      >
+                                        <span>{opt.label}</span>
+                                        {searchPriceRange === opt.value && <Check className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />}
+                                      </button>
+                                    ))}
+                                  </motion.div>
+                                </>
+                              )}
+                            </AnimatePresence>
+                          </div>
 
                           <div className="flex items-end pt-1 sm:pt-0">
                             <button
@@ -1616,7 +1613,7 @@ const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
                     </div>
                   </section>
 
-                  {/* UPDATED TESTIMONIALS SECTION: larger and neater */}
+                  {/* UPDATED TESTIMONIALS: no italic, larger, font-serif */}
                   <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 animate-fade-in" id="homepage-buyer-feedback">
                     <div className="text-center max-w-2xl mx-auto space-y-2">
                       <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">
@@ -1651,8 +1648,8 @@ const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
                                 <Star key={idy} className="w-4 h-4 fill-current text-amber-500" />
                               ))}
                             </div>
-                            {/* Increased font size and improved line-height */}
-                            <p className="text-sm md:text-base leading-relaxed text-zinc-800 dark:text-zinc-200  font-serif font-medium tracking-wide">
+                            {/* Larger, no italic, font-serif (Playfair Display) */}
+                            <p className="text-base md:text-lg leading-relaxed text-zinc-800 dark:text-zinc-200 font-serif font-medium tracking-wide">
                               "{t.testimony}"
                             </p>
                           </div>
@@ -1853,74 +1850,73 @@ const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
                       </AnimatePresence>
                     </div>
 
-                    {/* REPLACED PRICE DROPDOWN WITH PRICE RANGE BUTTONS */}
+                    {/* PRICE DROPDOWN (Properties page) */}
                     <div className="space-y-1.5 relative">
-  <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">
-    Price (ETB)
-  </label>
-  <button
-    type="button"
-    onClick={() => {
-      setPriceDropdownOpen(!priceDropdownOpen);
-      setLocDropdownOpen(false);
-      setTypeDropdownOpen(false);
-      setBedsDropdownOpen(false);
-    }}
-    className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
-  >
-    <span className="truncate">
-      {searchPriceRange === '' 
-        ? 'All Prices' 
-        : searchPriceRange === '4-6' 
-          ? '4 – 6 Million' 
-          : searchPriceRange === '6-10' 
-            ? '6 – 10 Million' 
-            : searchPriceRange === '10-20' 
-              ? '10 – 20 Million' 
-              : '20 Million+'}
-    </span>
-    <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${priceDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
-  </button>
-  
-  <AnimatePresence>
-    {priceDropdownOpen && (
-      <>
-        <div className="fixed inset-0 z-40" onClick={() => setPriceDropdownOpen(false)} />
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
-        >
-          {[
-            { value: '', label: 'All Prices' },
-            { value: '4-6', label: '4 – 6 Million' },
-            { value: '6-10', label: '6 – 10 Million' },
-            { value: '10-20', label: '10 – 20 Million' },
-            { value: '20+', label: '20 Million+' },
-          ].map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                setSearchPriceRange(opt.value);
-                setPriceDropdownOpen(false);
-              }}
-              className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
-                searchPriceRange === opt.value
-                  ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
-                  : 'text-zinc-700 dark:text-zinc-300'
-              }`}
-            >
-              <span>{opt.label}</span>
-              {searchPriceRange === opt.value && <Check className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />}
-            </button>
-          ))}
-        </motion.div>
-      </>
-    )}
-  </AnimatePresence>
-</div>
+                      <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">
+                        Price (ETB)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPriceDropdownOpen(!priceDropdownOpen);
+                          setLocDropdownOpen(false);
+                          setTypeDropdownOpen(false);
+                          setBedsDropdownOpen(false);
+                        }}
+                        className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
+                      >
+                        <span className="truncate">
+                          {searchPriceRange === '' 
+                            ? 'All Prices' 
+                            : searchPriceRange === '4-6' 
+                              ? '4 – 6 Million' 
+                              : searchPriceRange === '6-10' 
+                                ? '6 – 10 Million' 
+                                : searchPriceRange === '10-20' 
+                                  ? '10 – 20 Million' 
+                                  : '20 Million+'}
+                        </span>
+                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${priceDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
+                      </button>
+                      <AnimatePresence>
+                        {priceDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setPriceDropdownOpen(false)} />
+                            <motion.div
+                              initial={{ opacity: 0, y: -4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -4 }}
+                              className="absolute left-0 right-0 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 shadow-2xl z-50 py-1 divide-y divide-zinc-100 dark:divide-zinc-900"
+                            >
+                              {[
+                                { value: '', label: 'All Prices' },
+                                { value: '4-6', label: '4 – 6 Million' },
+                                { value: '6-10', label: '6 – 10 Million' },
+                                { value: '10-20', label: '10 – 20 Million' },
+                                { value: '20+', label: '20 Million+' },
+                              ].map((opt) => (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  onClick={() => {
+                                    setSearchPriceRange(opt.value);
+                                    setPriceDropdownOpen(false);
+                                  }}
+                                  className={`w-full px-4 py-2.5 text-xs text-left transition-colors duration-150 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
+                                    searchPriceRange === opt.value
+                                      ? 'bg-zinc-100 dark:bg-zinc-800 font-bold text-red-600 dark:text-red-500'
+                                      : 'text-zinc-700 dark:text-zinc-300'
+                                  }`}
+                                >
+                                  <span>{opt.label}</span>
+                                  {searchPriceRange === opt.value && <Check className="w-3.5 h-3.5 text-red-600 dark:text-red-500" />}
+                                </button>
+                              ))}
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
 
                     <div className="md:col-span-1 flex items-end">
                       <button
