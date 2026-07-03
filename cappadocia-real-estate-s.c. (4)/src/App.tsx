@@ -602,8 +602,9 @@ export default function App() {
   const [searchLocation, setSearchLocation] = useState('');
   const [searchType, setSearchType] = useState('');
   const [searchBedrooms, setSearchBedrooms] = useState('');
-  const [searchMinPrice, setSearchMinPrice] = useState<number | ''>('');
-  const [searchMaxPrice, setSearchMaxPrice] = useState<number | ''>('');
+  // NEW: replace min/max price with a single range selector
+  const [searchPriceRange, setSearchPriceRange] = useState<string>(''); // '' = all, '4-6', '6-10', '10-20', '20+'
+
   const [priceDropdownOpen, setPriceDropdownOpen] = useState(false);
 
   const [hoveredSubCity, setHoveredSubCity] = useState<string | null>(null);
@@ -858,6 +859,7 @@ export default function App() {
     );
   };
 
+  // Updated filter logic using price range
   const filteredProperties = properties.filter((p) => {
     const locMatch = searchLocation === '' || p.subCity.toLowerCase() === searchLocation.toLowerCase();
     const typeMatch = searchType === '' || p.type.toLowerCase() === searchType.toLowerCase();
@@ -872,8 +874,18 @@ export default function App() {
     }
 
     let priceMatch = true;
-    if (searchMinPrice !== '' && p.price < searchMinPrice) priceMatch = false;
-    if (searchMaxPrice !== '' && p.price > searchMaxPrice) priceMatch = false;
+    if (searchPriceRange !== '') {
+      const price = p.price;
+      if (searchPriceRange === '4-6') {
+        priceMatch = price >= 4000000 && price <= 6000000;
+      } else if (searchPriceRange === '6-10') {
+        priceMatch = price >= 6000000 && price <= 10000000;
+      } else if (searchPriceRange === '10-20') {
+        priceMatch = price >= 10000000 && price <= 20000000;
+      } else if (searchPriceRange === '20+') {
+        priceMatch = price >= 20000000;
+      }
+    }
 
     return locMatch && typeMatch && bedMatch && priceMatch;
   });
@@ -887,8 +899,7 @@ export default function App() {
     setSearchLocation('');
     setSearchType('');
     setSearchBedrooms('');
-    setSearchMinPrice('');
-    setSearchMaxPrice('');
+    setSearchPriceRange(''); // clear price range
     setPriceDropdownOpen(false);
   };
 
@@ -1377,83 +1388,37 @@ export default function App() {
                             </AnimatePresence>
                           </div>
 
+                          {/* NEW: Price Range Buttons */}
                           <div className="space-y-1 relative">
                             <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
-                              Price
+                              Price Range
                             </label>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPriceDropdownOpen(!priceDropdownOpen);
-                                setLocDropdownOpen(false);
-                                setTypeDropdownOpen(false);
-                                setBedsDropdownOpen(false);
-                              }}
-                              className="w-full p-2.5 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left h-[42px]"
-                            >
-                              <span className="truncate">
-                                {searchMinPrice !== '' || searchMaxPrice !== '' 
-                                  ? `${searchMinPrice || '0'} - ${searchMaxPrice || '∞'}` 
-                                  : 'All Prices'}
-                              </span>
-                              <ChevronDown className={`w-4 h-4 ml-1 flex-shrink-0 transition-transform duration-200 text-zinc-400 ${priceDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
-                            </button>
-
-                            <AnimatePresence>
-                              {priceDropdownOpen && (
-                                <>
-                                  <div className="fixed inset-0 z-40" onClick={() => setPriceDropdownOpen(false)} />
-                                  <motion.div
-                                    initial={{ opacity: 0, y: -4 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -4 }}
-                                    className="absolute left-0 right-0 mt-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl z-50 p-3 space-y-2 min-w-[200px]"
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex-1">
-                                        <label className="block text-[8px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-0.5">Min</label>
-                                        <input
-                                          type="number"
-                                          placeholder="Min"
-                                          value={searchMinPrice}
-                                          onChange={(e) => setSearchMinPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                                          className="w-full p-2 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
-                                        />
-                                      </div>
-                                      <span className="text-zinc-400 font-bold text-xs">–</span>
-                                      <div className="flex-1">
-                                        <label className="block text-[8px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-0.5">Max</label>
-                                        <input
-                                          type="number"
-                                          placeholder="Max"
-                                          value={searchMaxPrice}
-                                          onChange={(e) => setSearchMaxPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                                          className="w-full p-2 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex justify-end gap-2 pt-1">
-                                      <button
-                                        onClick={() => {
-                                          setSearchMinPrice('');
-                                          setSearchMaxPrice('');
-                                          setPriceDropdownOpen(false);
-                                        }}
-                                        className="px-3 py-1 text-[10px] font-bold uppercase text-zinc-600 dark:text-zinc-400 hover:text-red-600 transition cursor-pointer"
-                                      >
-                                        Clear
-                                      </button>
-                                      <button
-                                        onClick={() => setPriceDropdownOpen(false)}
-                                        className="px-3 py-1 text-[10px] font-bold uppercase bg-red-600 text-white rounded-lg hover:bg-red-700 transition cursor-pointer"
-                                      >
-                                        Apply
-                                      </button>
-                                    </div>
-                                  </motion.div>
-                                </>
-                              )}
-                            </AnimatePresence>
+                            <div className="flex flex-wrap gap-1.5">
+                              {[
+                                { value: '', label: 'All' },
+                                { value: '4-6', label: '4–6M' },
+                                { value: '6-10', label: '6–10M' },
+                                { value: '10-20', label: '10–20M' },
+                                { value: '20+', label: '20M+' }
+                              ].map((range) => (
+                                <button
+                                  key={range.value}
+                                  type="button"
+                                  onClick={() => {
+                                    setSearchPriceRange(range.value);
+                                    // Close any dropdown
+                                    setPriceDropdownOpen(false);
+                                  }}
+                                  className={`px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all ${
+                                    searchPriceRange === range.value
+                                      ? 'bg-red-600 text-white shadow-sm'
+                                      : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-700'
+                                  }`}
+                                >
+                                  {range.label}
+                                </button>
+                              ))}
+                            </div>
                           </div>
 
                           <div className="flex items-end pt-1 sm:pt-0">
@@ -1615,6 +1580,7 @@ export default function App() {
                     </div>
                   </section>
 
+                  {/* UPDATED TESTIMONIALS SECTION: larger and neater */}
                   <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 animate-fade-in" id="homepage-buyer-feedback">
                     <div className="text-center max-w-2xl mx-auto space-y-2">
                       <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">
@@ -1628,36 +1594,37 @@ export default function App() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                       {testimonials.map((t) => (
                         <div
                           key={t.id}
-                          className="p-4 md:p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col justify-between space-y-3"
+                          className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col justify-between space-y-4 transition-all hover:shadow-md hover:border-red-200 dark:hover:border-red-900"
                         >
                           {t.image && (
                             <div className="flex justify-center">
                               <img
                                 src={t.image}
                                 alt={t.clientName}
-                                className="w-32 h-32 rounded-full object-cover border-4 border-zinc-200 dark:border-zinc-700"
+                                className="w-20 h-20 rounded-full object-cover border-4 border-zinc-200 dark:border-zinc-700"
                               />
                             </div>
                           )}
                           <div className="space-y-3">
                             <div className="flex gap-1">
                               {Array.from({ length: t.rating }).map((_, idy) => (
-                                <Star key={idy} className="w-3.5 h-3.5 fill-current text-amber-500" />
+                                <Star key={idy} className="w-4 h-4 fill-current text-amber-500" />
                               ))}
                             </div>
-                            <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300 italic font-medium font-serif">
+                            {/* Increased font size and improved line-height */}
+                            <p className="text-sm md:text-base leading-relaxed text-zinc-800 dark:text-zinc-200 italic font-serif font-medium tracking-wide">
                               "{t.testimony}"
                             </p>
                           </div>
-                          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 mt-2">
-                            <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 tracking-tight">
+                          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 mt-2">
+                            <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">
                               {t.clientName}
                             </h4>
-                            <p className="text-[9px] uppercase font-bold tracking-widest text-[#003B95] dark:text-red-500 mt-1">
+                            <p className="text-[10px] uppercase font-bold tracking-widest text-[#003B95] dark:text-red-500 mt-1">
                               {t.propertyPurchased}
                             </p>
                           </div>
@@ -1850,83 +1817,36 @@ export default function App() {
                       </AnimatePresence>
                     </div>
 
+                    {/* REPLACED PRICE DROPDOWN WITH PRICE RANGE BUTTONS */}
                     <div className="space-y-1.5 relative">
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">
-                        Price (ETB)
+                        Price Range (ETB)
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPriceDropdownOpen(!priceDropdownOpen);
-                          setLocDropdownOpen(false);
-                          setTypeDropdownOpen(false);
-                          setBedsDropdownOpen(false);
-                        }}
-                        className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200 flex justify-between items-center cursor-pointer text-left"
-                      >
-                        <span>
-                          {searchMinPrice !== '' || searchMaxPrice !== '' 
-                            ? `${searchMinPrice || '0'} - ${searchMaxPrice || '∞'} ETB` 
-                            : 'All Prices'}
-                        </span>
-                        <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 text-zinc-400 ${priceDropdownOpen ? 'rotate-180 text-red-600' : ''}`} />
-                      </button>
-
-                      <AnimatePresence>
-                        {priceDropdownOpen && (
-                          <>
-                            <div className="fixed inset-0 z-40" onClick={() => setPriceDropdownOpen(false)} />
-                            <motion.div
-                              initial={{ opacity: 0, y: -4 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -4 }}
-                              className="absolute left-0 right-0 mt-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl z-50 p-4 space-y-3"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="flex-1">
-                                  <label className="block text-[9px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-1">Min</label>
-                                  <input
-                                    type="number"
-                                    placeholder="Min"
-                                    value={searchMinPrice}
-                                    onChange={(e) => setSearchMinPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                                    className="w-full p-2.5 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
-                                  />
-                                </div>
-                                <span className="text-zinc-400 font-bold">–</span>
-                                <div className="flex-1">
-                                  <label className="block text-[9px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-1">Max</label>
-                                  <input
-                                    type="number"
-                                    placeholder="Max"
-                                    value={searchMaxPrice}
-                                    onChange={(e) => setSearchMaxPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                                    className="w-full p-2.5 text-xs font-semibold rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex justify-end gap-2 pt-1">
-                                <button
-                                  onClick={() => {
-                                    setSearchMinPrice('');
-                                    setSearchMaxPrice('');
-                                    setPriceDropdownOpen(false);
-                                  }}
-                                  className="px-3 py-1.5 text-[10px] font-bold uppercase text-zinc-600 dark:text-zinc-400 hover:text-red-600 transition cursor-pointer"
-                                >
-                                  Clear
-                                </button>
-                                <button
-                                  onClick={() => setPriceDropdownOpen(false)}
-                                  className="px-3 py-1.5 text-[10px] font-bold uppercase bg-red-600 text-white rounded-lg hover:bg-red-700 transition cursor-pointer"
-                                >
-                                  Apply
-                                </button>
-                              </div>
-                            </motion.div>
-                          </>
-                        )}
-                      </AnimatePresence>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { value: '', label: 'All' },
+                          { value: '4-6', label: '4–6M' },
+                          { value: '6-10', label: '6–10M' },
+                          { value: '10-20', label: '10–20M' },
+                          { value: '20+', label: '20M+' }
+                        ].map((range) => (
+                          <button
+                            key={range.value}
+                            type="button"
+                            onClick={() => {
+                              setSearchPriceRange(range.value);
+                              setPriceDropdownOpen(false);
+                            }}
+                            className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all ${
+                              searchPriceRange === range.value
+                                ? 'bg-red-600 text-white shadow-sm'
+                                : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-700'
+                            }`}
+                          >
+                            {range.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="md:col-span-1 flex items-end">
