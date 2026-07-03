@@ -18,7 +18,10 @@ const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
 // Resend
-const resend = new Resend(process.env.RESEND_API_KEY || 're_FDYk8vqb_H3tnKf1nPkbGKfpgEkzNYo1Q');
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Log if API key is loaded
+console.log('🔑 Resend API Key loaded:', process.env.RESEND_API_KEY ? '✅ Yes' : '❌ No');
 
 const app = express();
 app.use(express.json({ limit: "25mb" }));
@@ -58,21 +61,39 @@ app.post("/api/gemini", async (req, res) => {
   // ... (keep your existing Gemini code)
 });
 
+// ================================================================
+// 📧 SEND REPLY EMAIL ENDPOINT (This is what you're missing!)
+// ================================================================
 app.post("/api/send-reply", async (req, res) => {
   try {
     const { to, subject, text } = req.body;
+    console.log('📧 Sending email to:', to);
+    console.log('📝 Subject:', subject);
+
     if (!to || !subject || !text) {
       return res.status(400).json({ error: 'Missing fields' });
     }
+
+    // ⚠️ IMPORTANT: Use sandbox domain for testing (no verification needed)
+    // Switch to your custom domain after verifying in Resend
+    const from = 'Cappadocia Real Estate <onboarding@resend.dev>';
+
     const { data, error } = await resend.emails.send({
-      from: 'Cappadocia Real Estate <noreply@cappadocia.com>',
+      from: from,
       to: [to],
-      subject,
-      text,
+      subject: subject,
+      text: text,
     });
-    if (error) throw error;
+
+    if (error) {
+      console.error('❌ Resend error:', error);
+      throw error;
+    }
+
+    console.log('✅ Email sent successfully:', data?.id);
     res.status(200).json({ success: true, messageId: data?.id });
   } catch (err: any) {
+    console.error('❌ Send email error:', err.message);
     res.status(500).json({ error: err.message || 'Failed to send' });
   }
 });
