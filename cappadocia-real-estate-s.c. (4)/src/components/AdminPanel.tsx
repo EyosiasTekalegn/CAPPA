@@ -55,7 +55,6 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { doc, setDoc, updateDoc } from "firebase/firestore";
 
 interface AdminPanelProps {
   loggedInUser: AdminUser | null;
@@ -352,12 +351,13 @@ export default function AdminPanel({
   // ============================================================
   // TESTIMONIAL FORM STATE
   // ============================================================
- const [isAddingTestimonial, setIsAddingTestimonial] = useState(false);
-const [testClient, setTestClient] = useState("");
-const [testRating, setTestRating] = useState(5);
-const [testText, setTestText] = useState("");
-const [testPurchased, setTestPurchased] = useState("Executive Suite CMC");
-const [testImage, setTestImage] = useState(""); // only once
+  const [isAddingTestimonial, setIsAddingTestimonial] = useState(false);
+  const [testClient, setTestClient] = useState("");
+  const [testRating, setTestRating] = useState(5);
+  const [testText, setTestText] = useState("");
+  const [testPurchased, setTestPurchased] = useState("Executive Suite CMC");
+  const [testImage, setTestImage] = useState("");
+
   // ============================================================
   // ADS FORM STATE
   // ============================================================
@@ -518,88 +518,48 @@ const [testImage, setTestImage] = useState(""); // only once
   };
 
   // ============================================================
-  // PROPERTY HANDLERS
+  // PROPERTY HANDLERS - FIXED
   // ============================================================
   const handleSaveProperty = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canEditCore) return;
+    if (!canEditCore) {
+      showAlert("Permission Denied", "You don't have permission to edit properties.");
+      return;
+    }
 
-    if (editingPropertyId) {
-      setProperties((prev) =>
-        prev.map((p) =>
-          p.id === editingPropertyId
-            ? {
-                ...p,
-                title: propTitle,
-                location: propLocation,
-                subCity: propSubCity,
-                type: propType,
-                price: Number(propPrice),
-                areaSqm: Number(propArea),
-                bedrooms: Number(propBedrooms),
-                bathrooms: Number(propBathrooms),
-                unitsInfo: propUnitsInfo,
-                floorsCount: Number(propFloorsCount),
-                unitsCount: Number(propUnitsCount),
-                constructionStatus: propConstructionStatus,
-                completionPercentage: Number(propCompletionPercentage),
-                status: propStatus,
-                availability: propAvailability,
-                showOnHomepage: propShowOnHomepage,
-                featuredImage: propImg,
-                galleryImages: propGallery.trim()
-                  ? propGallery.split("\n").map((s) => s.trim()).filter(Boolean)
-                  : [propImg],
-                description: propDescription,
-                yearBuilt: Number(propYear),
-                amenities: propAmenities,
-                videoTourUrl: propVideoTourUrl,
-                mapEmbedUrl: propMapEmbedUrl,
-                virtualTour: {
-                  title: propVirtualTourTitle || "Virtual Environment Preview",
-                  rooms: propVirtualTourRooms.map((r) => ({
-                    name: r.name || "Room",
-                    image: r.image || propImg,
-                    hotspots: [],
-                  })),
-                },
-              }
-            : p
-        )
-      );
-      setEditingPropertyId(null);
-    } else {
-      const newP: Property = {
-        id: `prop-${Math.floor(Math.random() * 90000 + 10000)}`,
-        title: propTitle,
-        location: propLocation,
-        subCity: propSubCity,
-        type: propType,
-        price: Number(propPrice),
-        areaSqm: Number(propArea),
-        bedrooms: Number(propBedrooms),
-        bathrooms: Number(propBathrooms),
-        unitsInfo: propUnitsInfo,
-        floorsCount: Number(propFloorsCount),
-        unitsCount: Number(propUnitsCount),
-        constructionStatus: propConstructionStatus,
-        completionPercentage: Number(propCompletionPercentage),
-        status: propStatus,
-        availability: propAvailability,
-        showOnHomepage: propShowOnHomepage,
-        yearBuilt: Number(propYear),
-        featuredImage: propImg,
-        galleryImages: propGallery.trim()
-          ? propGallery.split("\n").map((s) => s.trim()).filter(Boolean)
-          : [propImg],
-        description: propDescription,
-        amenities: propAmenities,
-        videoTourUrl: propVideoTourUrl,
-        mapEmbedUrl: propMapEmbedUrl,
-        virtualTour: {
-          title: propVirtualTourTitle || "Virtual Environment Preview",
-          rooms:
-            propVirtualTourRooms.length > 0
+    try {
+      if (editingPropertyId) {
+        // ✅ EDIT MODE: Update existing property
+        const updatedProperty = {
+          id: editingPropertyId,
+          title: propTitle,
+          location: propLocation,
+          subCity: propSubCity,
+          type: propType,
+          price: Number(propPrice),
+          areaSqm: Number(propArea),
+          bedrooms: Number(propBedrooms),
+          bathrooms: Number(propBathrooms),
+          unitsInfo: propUnitsInfo,
+          floorsCount: Number(propFloorsCount),
+          unitsCount: Number(propUnitsCount),
+          constructionStatus: propConstructionStatus,
+          completionPercentage: Number(propCompletionPercentage),
+          status: propStatus,
+          availability: propAvailability,
+          showOnHomepage: propShowOnHomepage,
+          featuredImage: propImg,
+          galleryImages: propGallery.trim()
+            ? propGallery.split("\n").map((s) => s.trim()).filter(Boolean)
+            : [propImg],
+          description: propDescription,
+          yearBuilt: Number(propYear),
+          amenities: propAmenities,
+          videoTourUrl: propVideoTourUrl,
+          mapEmbedUrl: propMapEmbedUrl,
+          virtualTour: {
+            title: propVirtualTourTitle || "Virtual Environment Preview",
+            rooms: propVirtualTourRooms.length > 0
               ? propVirtualTourRooms.map((r) => ({
                   name: r.name || "Room",
                   image: r.image || propImg,
@@ -612,16 +572,85 @@ const [testImage, setTestImage] = useState(""); // only once
                     hotspots: [],
                   },
                 ],
-        },
-      };
-      setProperties((prev) => [newP, ...prev]);
+          },
+        };
+
+        setProperties((prev) =>
+          prev.map((p) => (p.id === editingPropertyId ? updatedProperty : p))
+        );
+        
+        logActivity("property", `Updated property: ${propTitle}`);
+        showAlert("Property Updated", `"${propTitle}" has been successfully updated.`);
+        
+      } else {
+        // ✅ CREATE MODE: Add new property
+        const newP: Property = {
+          id: `prop-${Math.floor(Math.random() * 90000 + 10000)}`,
+          title: propTitle,
+          location: propLocation,
+          subCity: propSubCity,
+          type: propType,
+          price: Number(propPrice),
+          areaSqm: Number(propArea),
+          bedrooms: Number(propBedrooms),
+          bathrooms: Number(propBathrooms),
+          unitsInfo: propUnitsInfo,
+          floorsCount: Number(propFloorsCount),
+          unitsCount: Number(propUnitsCount),
+          constructionStatus: propConstructionStatus,
+          completionPercentage: Number(propCompletionPercentage),
+          status: propStatus,
+          availability: propAvailability,
+          showOnHomepage: propShowOnHomepage,
+          yearBuilt: Number(propYear),
+          featuredImage: propImg,
+          galleryImages: propGallery.trim()
+            ? propGallery.split("\n").map((s) => s.trim()).filter(Boolean)
+            : [propImg],
+          description: propDescription,
+          amenities: propAmenities,
+          videoTourUrl: propVideoTourUrl,
+          mapEmbedUrl: propMapEmbedUrl,
+          virtualTour: {
+            title: propVirtualTourTitle || "Virtual Environment Preview",
+            rooms: propVirtualTourRooms.length > 0
+              ? propVirtualTourRooms.map((r) => ({
+                  name: r.name || "Room",
+                  image: r.image || propImg,
+                  hotspots: [],
+                }))
+              : [
+                  {
+                    name: "Main Panorama",
+                    image: propImg,
+                    hotspots: [],
+                  },
+                ],
+          },
+        };
+        
+        setProperties((prev) => [newP, ...prev]);
+        logActivity("property", `Added new property: ${propTitle}`);
+        showAlert("Property Added", `"${propTitle}" has been successfully added.`);
+      }
+      
+      // Reset form and close
+      resetPropForm();
       setIsAddingProperty(false);
+      
+    } catch (error) {
+      console.error("Error saving property:", error);
+      showAlert("Error", "Failed to save property. Please try again.");
     }
-    resetPropForm();
   };
 
   const handleEditPropertyClick = (p: Property) => {
-    if (!canEditCore) return;
+    if (!canEditCore) {
+      showAlert("Permission Denied", "You don't have permission to edit properties.");
+      return;
+    }
+    
+    // Populate form with property data
     setEditingPropertyId(p.id);
     setPropTitle(p.title);
     setPropLocation(p.location);
@@ -648,19 +677,31 @@ const [testImage, setTestImage] = useState(""); // only once
     setPropVirtualTourTitle(p.virtualTour?.title || "Virtual Environment Preview");
     setPropVirtualTourRooms(p.virtualTour?.rooms?.map((r) => ({ name: r.name, image: r.image })) || []);
     setPropDescription(p.description);
+    
+    // Open the form
     setIsAddingProperty(true);
+    // Scroll to form
+    setTimeout(() => {
+      document.querySelector('.admin-property-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handleDeleteProperty = (id: string) => {
     if (!canEditCore) return;
+    const propertyToDelete = properties.find(p => p.id === id);
     showConfirm(
       "Confirm Property Deletion",
-      "Are you absolutely sure you want to delete this listing asset? This is irreversible and cannot be undone.",
-      () => setProperties((prev) => prev.filter((p) => p.id !== id))
+      `Are you sure you want to delete "${propertyToDelete?.title || 'this property'}"? This action is irreversible.`,
+      () => {
+        setProperties((prev) => prev.filter((p) => p.id !== id));
+        logActivity("property", `Deleted property: ${propertyToDelete?.title || id}`);
+        showAlert("Property Deleted", "The property has been removed.");
+      }
     );
   };
 
   const resetPropForm = () => {
+    setEditingPropertyId(null);
     setPropTitle("");
     setPropLocation("");
     setPropSubCity("Bole");
@@ -690,7 +731,6 @@ const [testImage, setTestImage] = useState(""); // only once
     setPropDescription(
       "A newly updated estate built with top premium standards."
     );
-    setEditingPropertyId(null);
   };
 
   // ============================================================
@@ -719,38 +759,60 @@ const [testImage, setTestImage] = useState(""); // only once
     setBlogImage(
       "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80"
     );
+    logActivity("blog", `Added new blog: ${blogTitle}`);
+    showAlert("Blog Added", `"${blogTitle}" has been published.`);
   };
 
   const handleDeleteBlog = (id: string) => {
     if (!canEditCore) return;
-    setBlogs((prev) => prev.filter((b) => b.id !== id));
+    const blogToDelete = blogs.find(b => b.id === id);
+    showConfirm(
+      "Confirm Blog Deletion",
+      `Are you sure you want to delete "${blogToDelete?.title || 'this blog'}"?`,
+      () => {
+        setBlogs((prev) => prev.filter((b) => b.id !== id));
+        logActivity("blog", `Deleted blog: ${blogToDelete?.title || id}`);
+        showAlert("Blog Deleted", "The blog has been removed.");
+      }
+    );
   };
 
   // ============================================================
   // TESTIMONIAL HANDLERS
   // ============================================================
-const handleSaveTestimonial = (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!canEditCore) return;
-  const newT: Testimonial = {
-    id: `t-${Math.floor(Math.random() * 90000 + 10000)}`,
-    clientName: testClient,
-    rating: Number(testRating),
-    testimony: testText,
-    propertyPurchased: testPurchased,
-    image: testImage || undefined,
+  const handleSaveTestimonial = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canEditCore) return;
+    const newT: Testimonial = {
+      id: `t-${Math.floor(Math.random() * 90000 + 10000)}`,
+      clientName: testClient,
+      rating: Number(testRating),
+      testimony: testText,
+      propertyPurchased: testPurchased,
+      image: testImage || undefined,
+    };
+    setTestimonials((prev) => [...prev, newT]);
+    setIsAddingTestimonial(false);
+    setTestClient("");
+    setTestText("");
+    setTestPurchased("Executive Suite CMC");
+    setTestImage("");
+    logActivity("testimonial", `Added testimonial from ${testClient}`);
+    showAlert("Testimonial Added", `Testimonial from ${testClient} has been published.`);
   };
-  setTestimonials((prev) => [...prev, newT]);
-  setIsAddingTestimonial(false);
-  setTestClient("");
-  setTestText("");
-  setTestPurchased("Executive Suite CMC");
-  setTestImage(""); // clear after save
-};
 
   const handleDeleteTestimonial = (id: string) => {
     if (!canEditCore) return;
-    setTestimonials((prev) => prev.filter((t) => t.id !== id));
+    const testimonialToDelete = testimonials.find(t => t.id === id);
+    showConfirm(
+      "Confirm Testimonial Deletion",
+      `Are you sure you want to delete this testimonial from ${testimonialToDelete?.clientName || 'this client'}?`,
+      () => {
+        setTestimonials((prev) => prev.filter((t) => t.id !== id));
+        logActivity("testimonial", `Deleted testimonial from ${testimonialToDelete?.clientName || id}`);
+        showAlert("Testimonial Deleted", "The testimonial has been removed.");
+      }
+    );
   };
 
   // ============================================================
@@ -774,6 +836,8 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
     setAdTitle("");
     setAdContent("");
     setAdCtaLink("properties");
+    logActivity("campaign", `Added new pop-up ad: ${adTitle}`);
+    showAlert("Pop-up Ad Added", `"${adTitle}" has been created.`);
   };
 
   const toggleAdActiveState = (id: string) => {
@@ -781,11 +845,22 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
     setPopupAds((prev) =>
       prev.map((a) => (a.id === id ? { ...a, isActive: !a.isActive } : a))
     );
+    const ad = popupAds.find(a => a.id === id);
+    logActivity("campaign", `${ad?.isActive ? 'Deactivated' : 'Activated'} pop-up ad: ${ad?.title || id}`);
   };
 
   const handleDeleteAd = (id: string) => {
     if (!canEditCore) return;
-    setPopupAds((prev) => prev.filter((a) => a.id !== id));
+    const adToDelete = popupAds.find(a => a.id === id);
+    showConfirm(
+      "Confirm Pop-up Deletion",
+      `Are you sure you want to delete "${adToDelete?.title || 'this pop-up'}"?`,
+      () => {
+        setPopupAds((prev) => prev.filter((a) => a.id !== id));
+        logActivity("campaign", `Deleted pop-up ad: ${adToDelete?.title || id}`);
+        showAlert("Pop-up Deleted", "The pop-up ad has been removed.");
+      }
+    );
   };
 
   // ============================================================
@@ -798,13 +873,20 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
     setMessages((prev) =>
       prev.map((m) => (m.id === id ? { ...m, status: newStatus } : m))
     );
+    const message = messages.find(m => m.id === id);
+    logActivity("message", `Message from ${message?.fullName || 'client'} marked as ${newStatus}`);
   };
 
   const handleDeleteMessage = (id: string) => {
+    const messageToDelete = messages.find(m => m.id === id);
     showConfirm(
       "Delete Inquiry Log",
-      "Are you absolutely sure you want to delete this client contact message log? This is irreversible.",
-      () => setMessages((prev) => prev.filter((m) => m.id !== id))
+      `Are you sure you want to delete this message from ${messageToDelete?.fullName || 'this client'}? This is irreversible.`,
+      () => {
+        setMessages((prev) => prev.filter((m) => m.id !== id));
+        logActivity("message", `Deleted message from ${messageToDelete?.fullName || id}`);
+        showAlert("Message Deleted", "The inquiry has been removed.");
+      }
     );
   };
 
@@ -850,6 +932,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
       linkUrl: btnLinkUrl,
       linkLabel: btnLinkLabel,
     });
+    logActivity("system", "Home settings updated by admin");
     showAlert(
       "Settings Saved",
       "All home screen, contact, and button settings have been updated!"
@@ -1022,6 +1105,8 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
         )
       );
       setEditingProjectId(null);
+      logActivity("project", `Updated project: ${projTitle}`);
+      showAlert("Project Updated", `"${projTitle}" has been updated.`);
     } else {
       const newP: Project = {
         id: `proj-${Math.floor(Math.random() * 90000 + 10000)}`,
@@ -1037,10 +1122,11 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
         specs: projSpecs,
       };
       setProjects((prev) => [...prev, newP]);
-      setIsAddingProject(false);
+      logActivity("project", `Added new project: ${projTitle}`);
+      showAlert("Project Saved", `"${projTitle}" has been added.`);
     }
     resetProjForm();
-    showAlert("Project Saved", "The construction portfolio showcase has been saved successfully!");
+    setIsAddingProject(false);
   };
 
   const handleEditProjectClick = (p: Project) => {
@@ -1058,10 +1144,15 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
 
   const handleDeleteProjectLocal = (id: string) => {
     if (!canEditCore) return;
+    const projectToDelete = projects.find(p => p.id === id);
     showConfirm(
       "Confirm Showcase Deletion",
-      "Are you absolutely sure you want to delete this completed project showcase? This is irreversible and cannot be undone.",
-      () => setProjects((prev) => prev.filter((p) => p.id !== id))
+      `Are you sure you want to delete "${projectToDelete?.title || 'this project'}"? This is irreversible.`,
+      () => {
+        setProjects((prev) => prev.filter((p) => p.id !== id));
+        logActivity("project", `Deleted project: ${projectToDelete?.title || id}`);
+        showAlert("Project Deleted", "The project has been removed.");
+      }
     );
   };
 
@@ -1210,7 +1301,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
               }`}
             >
               <Megaphone className="w-4 h-4" />
-              Pop-up Text ({popupAds.length})
+              Pop-up Ads ({popupAds.length})
             </button>
           )}
 
@@ -1421,7 +1512,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
             </div>
           )}
 
-          {/* TAB 1: PROPERTIES MANAGEMENT */}
+          {/* TAB 1: PROPERTIES MANAGEMENT - FIXED */}
           {activeAdminTab === "properties" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -1436,10 +1527,15 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                 {canEditCore && (
                   <button
                     onClick={() => {
-                      resetPropForm();
-                      setIsAddingProperty(!isAddingProperty);
+                      if (isAddingProperty) {
+                        resetPropForm();
+                        setIsAddingProperty(false);
+                      } else {
+                        resetPropForm();
+                        setIsAddingProperty(true);
+                      }
                     }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-600 text-white dark:text-zinc-100 transition cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-700 text-white dark:text-zinc-100 transition cursor-pointer"
                   >
                     {isAddingProperty ? (
                       <X className="w-4 h-4" />
@@ -1451,6 +1547,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                 )}
               </div>
 
+              {/* Property Form - Fixed */}
               <AnimatePresence>
                 {isAddingProperty && canEditCore && (
                   <motion.form
@@ -1458,9 +1555,14 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     onSubmit={handleSaveProperty}
-                    className="p-6 rounded-2xl border space-y-4 overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-800"
+                    className="p-6 rounded-2xl border space-y-4 overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-800 admin-property-form"
                   >
+                    <h4 className="font-bold text-lg font-serif text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-700 pb-3">
+                      {editingPropertyId ? "✏️ Edit Property" : "➕ Add New Property"}
+                    </h4>
+                    
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Title */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Property Listing Title *
@@ -1475,6 +1577,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Location */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Select Location *
@@ -1493,6 +1596,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Property Type */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Property Type *
@@ -1508,6 +1612,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Price */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Base Listing Price (ETB) *
@@ -1521,6 +1626,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Area */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Total Area Volume (sqm) *
@@ -1534,6 +1640,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Bedrooms */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Bedrooms *
@@ -1547,6 +1654,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Bathrooms */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Bathrooms *
@@ -1560,6 +1668,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Construction Status */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Construction Status *
@@ -1578,6 +1687,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Completion Percentage */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Completion Percentage ({propCompletionPercentage}%) *
@@ -1594,6 +1704,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Floor Count */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Floor Count *
@@ -1608,6 +1719,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Total Units */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Total Units *
@@ -1622,6 +1734,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Availability */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Listing Availability Status *
@@ -1638,6 +1751,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Show on Homepage */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-2">
                           Visibility Options
@@ -1656,11 +1770,11 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                           </span>
                         </label>
                         <p className="text-[10px] text-zinc-500 mt-1 pl-1">
-                          If unchecked, this listing will only be visible in
-                          Admin and direct links, great for hiding "Sold" properties from frontend.
+                          If unchecked, this listing will only be visible in Admin and direct links.
                         </p>
                       </div>
 
+                      {/* Images */}
                       <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800/60">
                         <ImageInput
                           value={propImg}
@@ -1675,6 +1789,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Amenities */}
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-2">
                           Select Executive Services & Infrastructure
@@ -1724,7 +1839,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         </div>
                       </div>
 
-                      {/* Room & Unit Arrays */}
+                      {/* Units Info */}
                       <div className="sm:col-span-2 space-y-6 bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800/60 mt-2 mb-4">
                         <div>
                           <h3 className="text-sm font-bold uppercase tracking-widest text-[#DC2626] dark:text-red-500 flex items-center justify-between">
@@ -1831,6 +1946,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         </div>
                       </div>
 
+                      {/* Map Embed URL */}
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Google Maps Place URL or Embed Link (Optional)
@@ -1844,6 +1960,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Video Tour URL */}
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Realistic Video Tour URL (Optional)
@@ -1857,6 +1974,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         />
                       </div>
 
+                      {/* Virtual Tour */}
                       <div className="sm:col-span-2 grid grid-cols-1 gap-4 bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800/60 mt-2 mb-4">
                         <div className="">
                           <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-800 dark:text-zinc-200 flex items-center justify-between">
@@ -1875,8 +1993,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                             </button>
                           </h3>
                           <p className="text-[10px] text-zinc-500 mt-1">
-                            Configure the 360 viewer fallback if video tour
-                            isn't supplied (Add multiple rooms/panoramas).
+                            Configure the 360 viewer fallback if video tour isn't supplied.
                           </p>
                         </div>
 
@@ -1944,6 +2061,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                         </div>
                       </div>
 
+                      {/* Description */}
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Short Listing Description
@@ -1957,25 +2075,30 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                       </div>
                     </div>
 
-                    <div className="flex gap-2 justify-end pt-2">
+                    {/* Form Buttons */}
+                    <div className="flex gap-2 justify-end pt-2 border-t border-zinc-200 dark:border-zinc-700 mt-4">
                       <button
                         type="button"
-                        onClick={resetPropForm}
-                        className="px-4 py-2 rounded text-xs font-semibold bg-zinc-200 dark:bg-zinc-800 text-black dark:text-zinc-100"
+                        onClick={() => {
+                          resetPropForm();
+                          setIsAddingProperty(false);
+                        }}
+                        className="px-4 py-2 rounded-lg text-xs font-semibold bg-zinc-200 dark:bg-zinc-800 text-black dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition cursor-pointer"
                       >
-                        Reset fields
+                        Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2 rounded text-xs font-bold bg-blue-600 hover:bg-blue-600 text-white dark:text-zinc-100"
+                        className="px-5 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white dark:text-zinc-100 transition cursor-pointer shadow-sm"
                       >
-                        {editingPropertyId ? "Save Changes" : "Publish Asset"}
+                        {editingPropertyId ? "💾 Save Changes" : "📤 Publish Asset"}
                       </button>
                     </div>
                   </motion.form>
                 )}
               </AnimatePresence>
 
+              {/* Property List Table */}
               <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs">
                 <table className="w-full min-w-[650px] border-collapse text-left text-xs bg-white dark:bg-zinc-900">
                   <thead className="bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 uppercase font-bold tracking-wider">
@@ -1987,11 +2110,11 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                       <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-black/10">
+                  <tbody className="divide-y divide-black/10 dark:divide-zinc-800">
                     {properties.map((p) => (
                       <tr
                         key={p.id}
-                        className="hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-black dark:text-zinc-100 hover:font-bold transition"
+                        className="hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
                       >
                         <td className="p-4">
                           <div className="flex items-center gap-3">
@@ -2002,7 +2125,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                               referrerPolicy="no-referrer"
                             />
                             <div>
-                              <p className="font-bold">{p.title}</p>
+                              <p className="font-bold text-zinc-900 dark:text-zinc-100">{p.title}</p>
                               <p className="text-[10px] text-zinc-700 dark:text-zinc-300">
                                 {p.type} • {p.areaSqm} sqm
                               </p>
@@ -2010,19 +2133,21 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                           </div>
                         </td>
                         <td className="p-4">
-                          <p>{p.location}</p>
+                          <p className="text-zinc-900 dark:text-zinc-100">{p.location}</p>
                           <p className="text-[10px] text-zinc-700 dark:text-zinc-300">
                             {p.subCity}
                           </p>
                         </td>
-                        <td className="p-4 font-mono font-bold text-blue-500">
+                        <td className="p-4 font-mono font-bold text-blue-600 dark:text-blue-400">
                           {p.price.toLocaleString()}
                         </td>
                         <td className="p-4">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               p.availability === "Available"
-                                ? "bg-blue-100 text-blue-800"
+                                ? "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400"
+                                : p.availability === "Reserved"
+                                ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
                                 : "bg-zinc-200 dark:bg-zinc-800 text-black dark:text-zinc-100"
                             }`}
                           >
@@ -2035,15 +2160,15 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                               <>
                                 <button
                                   onClick={() => handleEditPropertyClick(p)}
-                                  className="p-1.5 rounded hover:bg-blue-100 :bg-blue-900 text-blue-600 transition"
-                                  title="Edit parameters"
+                                  className="p-1.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 transition"
+                                  title="Edit property"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteProperty(p.id)}
-                                  className="p-1.5 rounded hover:bg-blue-100 :bg-blue-900 text-blue-600 transition"
-                                  title="Delete Listing"
+                                  className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition"
+                                  title="Delete property"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -2063,7 +2188,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
             </div>
           )}
 
-          {/* TAB 2: HOME SCREEN LAYOUT ENGINE + CONTACT BUTTON SETTINGS */}
+          {/* TAB 2: HOME SCREEN LAYOUT ENGINE */}
           {activeAdminTab === "home" && isOwner && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               <form
@@ -2565,7 +2690,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
             </div>
           )}
 
-          {/* TAB 3: TESTIMONIALS – with image upload */}
+          {/* TAB 3: TESTIMONIALS */}
           {activeAdminTab === "testimonials" && canEditCore && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -2724,8 +2849,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                     Marketing & Corporate News Entries
                   </h3>
                   <p className="text-xs text-zinc-700 dark:text-zinc-300">
-                    Deploy luxury real estate insights dynamically on Cappadocia
-                    Blog.
+                    Deploy luxury real estate insights dynamically on Cappadocia Blog.
                   </p>
                 </div>
                 {canEditCore && (
@@ -2882,8 +3006,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                     Completed Projects Portfolio Manager
                   </h3>
                   <p className="text-xs text-zinc-700 dark:text-zinc-300">
-                    Add or edit Cappadocia S.C.'s metropolitan landmarks
-                    dynamically without touching a single line of code.
+                    Add or edit Cappadocia S.C.'s metropolitan landmarks dynamically without touching a single line of code.
                   </p>
                 </div>
                 {canEditCore && (
@@ -3096,7 +3219,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
             </div>
           )}
 
-          {/* TAB 6: ADS */}
+          {/* TAB 6: ADS - WITH FIXED IMAGE UPLOAD */}
           {activeAdminTab === "ads" && canEditCore && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -3193,18 +3316,15 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-[10px] uppercase font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                        Image URL
-                      </label>
-                      <input
-                        type="text"
-                        required
+                    {/* ✅ FIXED: Image upload with drag-and-drop */}
+                    <div className="sm:col-span-2">
+                      <ImageInput
                         value={adImg}
-                        onChange={(e) => setAdImg(e.target.value)}
-                        className="w-full p-3 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
+                        onChange={(val) => setAdImg(val)}
+                        label="Upload Pop-up Image (Click or Drag & Drop)"
                       />
                     </div>
+
                     <div className="sm:col-span-2">
                       <label className="block text-[10px] uppercase font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                         Ad Content Copy *
@@ -3295,8 +3415,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                   CRM Lead & Inquiry Records
                 </h3>
                 <p className="text-xs text-zinc-700 dark:text-zinc-300">
-                  Direct client connection logging from Cappadocia public
-                  contact forms.
+                  Direct client connection logging from Cappadocia public contact forms.
                 </p>
               </div>
 
@@ -3555,8 +3674,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                     Management Group & Roles
                   </h3>
                   <p className="text-xs text-zinc-700 dark:text-zinc-300">
-                    Configure corporate administrative authorizations. Owner
-                    exclusive access.
+                    Configure corporate administrative authorizations. Owner exclusive access.
                   </p>
                 </div>
                 <button
@@ -3741,9 +3859,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                     Dynamic Catalog Management
                   </h2>
                   <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-0.5">
-                    Add, modify, and delete locations, property types, and
-                    features. All modifications will sync to filters and setup
-                    forms instantly.
+                    Add, modify, and delete locations, property types, and features. All modifications will sync to filters and setup forms instantly.
                   </p>
                 </div>
               </div>
@@ -3834,8 +3950,7 @@ const handleSaveTestimonial = (e: React.FormEvent) => {
                 {/* Property Type catalog board */}
                 <div className="bg-white dark:bg-zinc-950 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col h-[480px]">
                   <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 mb-3">
-                    <Building2 className="w-4 h-4 text-[#DC2626]" /> Property
-                    Types
+                    <Building2 className="w-4 h-4 text-[#DC2626]" /> Property Types
                   </h3>
                   <div className="flex gap-2 mb-4">
                     <input
