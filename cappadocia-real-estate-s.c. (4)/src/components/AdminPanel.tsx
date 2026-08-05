@@ -518,9 +518,9 @@ export default function AdminPanel({
   };
 
   // ============================================================
-  // PROPERTY HANDLERS - FIXED
+  // PROPERTY HANDLERS - FIXED WITH DIRECT FIRESTORE WRITE
   // ============================================================
-  const handleSaveProperty = (e: React.FormEvent) => {
+  const handleSaveProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) {
       showAlert("Permission Denied", "You don't have permission to edit properties.");
@@ -528,108 +528,74 @@ export default function AdminPanel({
     }
 
     try {
-      if (editingPropertyId) {
-        // ✅ EDIT MODE: Update existing property
-        const updatedProperty = {
-          id: editingPropertyId,
-          title: propTitle,
-          location: propLocation,
-          subCity: propSubCity,
-          type: propType,
-          price: Number(propPrice),
-          areaSqm: Number(propArea),
-          bedrooms: Number(propBedrooms),
-          bathrooms: Number(propBathrooms),
-          unitsInfo: propUnitsInfo,
-          floorsCount: Number(propFloorsCount),
-          unitsCount: Number(propUnitsCount),
-          constructionStatus: propConstructionStatus,
-          completionPercentage: Number(propCompletionPercentage),
-          status: propStatus,
-          availability: propAvailability,
-          showOnHomepage: propShowOnHomepage,
-          featuredImage: propImg,
-          galleryImages: propGallery.trim()
-            ? propGallery.split("\n").map((s) => s.trim()).filter(Boolean)
-            : [propImg],
-          description: propDescription,
-          yearBuilt: Number(propYear),
-          amenities: propAmenities,
-          videoTourUrl: propVideoTourUrl,
-          mapEmbedUrl: propMapEmbedUrl,
-          virtualTour: {
-            title: propVirtualTourTitle || "Virtual Environment Preview",
-            rooms: propVirtualTourRooms.length > 0
-              ? propVirtualTourRooms.map((r) => ({
-                  name: r.name || "Room",
-                  image: r.image || propImg,
+      // Build the property data object
+      const propertyData = {
+        title: propTitle,
+        location: propLocation,
+        subCity: propSubCity,
+        type: propType,
+        price: Number(propPrice),
+        areaSqm: Number(propArea),
+        bedrooms: Number(propBedrooms),
+        bathrooms: Number(propBathrooms),
+        unitsInfo: propUnitsInfo,
+        floorsCount: Number(propFloorsCount),
+        unitsCount: Number(propUnitsCount),
+        constructionStatus: propConstructionStatus,
+        completionPercentage: Number(propCompletionPercentage),
+        status: propStatus,
+        availability: propAvailability,
+        showOnHomepage: propShowOnHomepage,
+        featuredImage: propImg,
+        galleryImages: propGallery.trim()
+          ? propGallery.split("\n").map((s) => s.trim()).filter(Boolean)
+          : [propImg],
+        description: propDescription,
+        yearBuilt: Number(propYear),
+        amenities: propAmenities,
+        videoTourUrl: propVideoTourUrl,
+        mapEmbedUrl: propMapEmbedUrl,
+        virtualTour: {
+          title: propVirtualTourTitle || "Virtual Environment Preview",
+          rooms: propVirtualTourRooms.length > 0
+            ? propVirtualTourRooms.map((r) => ({
+                name: r.name || "Room",
+                image: r.image || propImg,
+                hotspots: [],
+              }))
+            : [
+                {
+                  name: "Main Panorama",
+                  image: propImg,
                   hotspots: [],
-                }))
-              : [
-                  {
-                    name: "Main Panorama",
-                    image: propImg,
-                    hotspots: [],
-                  },
-                ],
-          },
-        };
+                },
+              ],
+        },
+      };
 
+      if (editingPropertyId) {
+        // ✅ EDIT MODE: Update existing property in Firestore
+        const propertyRef = doc(db, "properties", editingPropertyId);
+        await setDoc(propertyRef, { ...propertyData, id: editingPropertyId }, { merge: true });
+        
+        // Update local state
         setProperties((prev) =>
-          prev.map((p) => (p.id === editingPropertyId ? updatedProperty : p))
+          prev.map((p) => (p.id === editingPropertyId ? { ...propertyData, id: editingPropertyId } : p))
         );
         
         logActivity("property", `Updated property: ${propTitle}`);
         showAlert("Property Updated", `"${propTitle}" has been successfully updated.`);
         
       } else {
-        // ✅ CREATE MODE: Add new property
-        const newP: Property = {
-          id: `prop-${Math.floor(Math.random() * 90000 + 10000)}`,
-          title: propTitle,
-          location: propLocation,
-          subCity: propSubCity,
-          type: propType,
-          price: Number(propPrice),
-          areaSqm: Number(propArea),
-          bedrooms: Number(propBedrooms),
-          bathrooms: Number(propBathrooms),
-          unitsInfo: propUnitsInfo,
-          floorsCount: Number(propFloorsCount),
-          unitsCount: Number(propUnitsCount),
-          constructionStatus: propConstructionStatus,
-          completionPercentage: Number(propCompletionPercentage),
-          status: propStatus,
-          availability: propAvailability,
-          showOnHomepage: propShowOnHomepage,
-          yearBuilt: Number(propYear),
-          featuredImage: propImg,
-          galleryImages: propGallery.trim()
-            ? propGallery.split("\n").map((s) => s.trim()).filter(Boolean)
-            : [propImg],
-          description: propDescription,
-          amenities: propAmenities,
-          videoTourUrl: propVideoTourUrl,
-          mapEmbedUrl: propMapEmbedUrl,
-          virtualTour: {
-            title: propVirtualTourTitle || "Virtual Environment Preview",
-            rooms: propVirtualTourRooms.length > 0
-              ? propVirtualTourRooms.map((r) => ({
-                  name: r.name || "Room",
-                  image: r.image || propImg,
-                  hotspots: [],
-                }))
-              : [
-                  {
-                    name: "Main Panorama",
-                    image: propImg,
-                    hotspots: [],
-                  },
-                ],
-          },
-        };
+        // ✅ CREATE MODE: Add new property to Firestore
+        const newId = `prop-${Math.floor(Math.random() * 90000 + 10000)}`;
+        const newProperty = { ...propertyData, id: newId };
         
-        setProperties((prev) => [newP, ...prev]);
+        await setDoc(doc(db, "properties", newId), newProperty);
+        
+        // Update local state
+        setProperties((prev) => [newProperty, ...prev]);
+        
         logActivity("property", `Added new property: ${propTitle}`);
         showAlert("Property Added", `"${propTitle}" has been successfully added.`);
       }
@@ -638,9 +604,9 @@ export default function AdminPanel({
       resetPropForm();
       setIsAddingProperty(false);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving property:", error);
-      showAlert("Error", "Failed to save property. Please try again.");
+      showAlert("Error", `Failed to save property: ${error.message || "Please try again."}`);
     }
   };
 
@@ -686,16 +652,27 @@ export default function AdminPanel({
     }, 100);
   };
 
-  const handleDeleteProperty = (id: string) => {
+  const handleDeleteProperty = async (id: string) => {
     if (!canEditCore) return;
     const propertyToDelete = properties.find(p => p.id === id);
+    
     showConfirm(
       "Confirm Property Deletion",
       `Are you sure you want to delete "${propertyToDelete?.title || 'this property'}"? This action is irreversible.`,
-      () => {
-        setProperties((prev) => prev.filter((p) => p.id !== id));
-        logActivity("property", `Deleted property: ${propertyToDelete?.title || id}`);
-        showAlert("Property Deleted", "The property has been removed.");
+      async () => {
+        try {
+          // Delete from Firestore
+          await deleteDoc(doc(db, "properties", id));
+          
+          // Remove from local state
+          setProperties((prev) => prev.filter((p) => p.id !== id));
+          
+          logActivity("property", `Deleted property: ${propertyToDelete?.title || id}`);
+          showAlert("Property Deleted", "The property has been removed.");
+        } catch (error: any) {
+          console.error("Error deleting property:", error);
+          showAlert("Error", `Failed to delete property: ${error.message}`);
+        }
       }
     );
   };
