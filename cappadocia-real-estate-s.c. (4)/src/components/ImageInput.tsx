@@ -8,8 +8,42 @@ interface ImageInputProps {
   multiline?: boolean;
 }
 
+// Compression helper
+function compressImage(dataUrl: string, maxWidth = 1200, maxHeight = 1200, quality = 0.7): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      // Scale down if needed
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas context not available'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      // Convert to JPEG with quality to reduce size
+      const compressed = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressed);
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = dataUrl;
+  });
+}
+
 export const ImageInput: React.FC<ImageInputProps> = ({ value, onChange, label, multiline }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -21,33 +55,53 @@ export const ImageInput: React.FC<ImageInputProps> = ({ value, onChange, label, 
     setIsDragging(false);
   };
 
-  const processFiles = (files: FileList | null) => {
+  const processFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    
-    if (multiline) {
-      // For multiline, convert each file to base64 and append
-      Array.from(files).forEach((file) => {
+
+    setIsCompressing(true);
+    try {
+      if (multiline) {
+        // For multiline, process each file individually
+        const results: string[] = [];
+        for (const file of Array.from(files)) {
+          if (!file.type.startsWith('image/')) continue;
+          const reader = new FileReader();
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          // Compress if the dataUrl is large (> 500KB approx)
+          let compressed = dataUrl;
+          if (dataUrl.length > 500000) {
+            compressed = await compressImage(dataUrl);
+          }
+          results.push(compressed);
+        }
+        const combined = results.join('\n');
+        onChange(value ? `${value}\n${combined}` : combined);
+      } else {
+        // Single image mode
+        const file = files[0];
         if (!file.type.startsWith('image/')) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            const resultStr = e.target.result.toString();
-            onChange(value ? `${value}\n${resultStr}` : resultStr);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    } else {
-      // For single image, replace the value
-      const file = files[0];
-      if (!file.type.startsWith('image/')) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          onChange(e.target.result.toString());
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        let compressed = dataUrl;
+        if (dataUrl.length > 500000) {
+          compressed = await compressImage(dataUrl);
         }
-      };
-      reader.readAsDataURL(file);
+        onChange(compressed);
+      }
+    } catch (err) {
+      console.error('Image processing error:', err);
+      // Fallback: try to use original data URL without compression if compression fails
+      alert('Image compression failed. Please try a smaller image or use a different format.');
+    } finally {
+      setIsCompressing(false);
     }
   };
 
@@ -137,7 +191,7 @@ export const ImageInput: React.FC<ImageInputProps> = ({ value, onChange, label, 
         </div>
       )}
 
-      {/* DRAG-AND-DROP FILE PICKER (hide for single value screen) */}
+      {/* DRAG-AND-DROP FILE PICKER */}
       {(!value || (multiline && imagesList.length === 0)) && (
         <div 
           onDragOver={handleDragOver}
@@ -150,9 +204,18 @@ export const ImageInput: React.FC<ImageInputProps> = ({ value, onChange, label, 
               : 'border-zinc-300 dark:border-zinc-700 hover:bg-black/5 dark:hover:bg-white/5 bg-zinc-50 dark:bg-zinc-900'
           }`}
         >
-          <UploadCloud className="w-8 h-8 mx-auto mb-3 text-zinc-400 dark:text-zinc-500" />
-          <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Tap to choose image</p>
-          <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">Supports drag-and-drop & phone files</p>
+          {isCompressing ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent" />
+              <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Compressing image...</p>
+            </div>
+          ) : (
+            <>
+              <UploadCloud className="w-8 h-8 mx-auto mb-3 text-zinc-400 dark:text-zinc-500" />
+              <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Tap to choose image</p>
+              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">Supports drag-and-drop & phone files</p>
+            </>
+          )}
         </div>
       )}
 
