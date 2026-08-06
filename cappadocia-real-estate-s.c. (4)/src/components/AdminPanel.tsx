@@ -49,12 +49,14 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { ImageInput } from "./ImageInput";
+import { LinkInputWithUpload } from "./LinkInputWithUpload";
 import { auth, db } from "../firebase";
 import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
 } from "firebase/auth";
 
+// ==================== Interfaces ====================
 interface AdminPanelProps {
   loggedInUser: AdminUser | null;
   properties: Property[];
@@ -415,6 +417,7 @@ export default function AdminPanel({
   const [homeImgUrl, setHomeImgUrl] = useState(homeSettings.heroImage);
   const [brandLogo, setBrandLogo] = useState(homeSettings.brandLogo || "");
   const [brandFavicon, setBrandFavicon] = useState(homeSettings.brandFavicon || "");
+  const [isSavingHomeSettings, setIsSavingHomeSettings] = useState(false);
 
   // Socials
   const [socTwitter, setSocTwitter] = useState(
@@ -928,50 +931,68 @@ export default function AdminPanel({
   // ============================================================
   // HOME SETTINGS HANDLERS
   // ============================================================
-  const handleUpdateHomeLayout = (e: React.FormEvent) => {
+  const handleUpdateHomeLayout = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isOwner) return;
-    setHomeSettings({
-      heroTitle: homeH1,
-      heroSubtitle: homeSub,
-      heroImage: homeImgUrl,
-      brandLogo: brandLogo,
-      brandFavicon: brandFavicon,
-    });
-    if (setGlobalSocials) {
-      setGlobalSocials({
-        twitter: socTwitter,
-        linkedin: socLinkedin,
-        telegram: socTelegram,
-        tiktok: socTiktok,
-        whatsapp: socWhatsapp,
-        facebook: socFacebook,
-        instagram: socInstagram,
+    if (!isOwner) {
+      showAlert("Permission Denied", "Only the Owner can edit home settings.");
+      return;
+    }
+
+    setIsSavingHomeSettings(true);
+
+    try {
+      setHomeSettings({
+        heroTitle: homeH1,
+        heroSubtitle: homeSub,
+        heroImage: homeImgUrl,
+        brandLogo: brandLogo,
+        brandFavicon: brandFavicon,
       });
-    }
-    if (setContactInfo) {
-      setContactInfo({
-        email: contactEmail,
-        phone: contactPhone,
-        address: contactAddress,
-        hqAddress: contactHqAddress,
-        hotline: contactHotline,
-        diasporaHotline: contactDiasporaHotline,
+
+      if (setGlobalSocials) {
+        setGlobalSocials({
+          twitter: socTwitter,
+          linkedin: socLinkedin,
+          telegram: socTelegram,
+          tiktok: socTiktok,
+          whatsapp: socWhatsapp,
+          facebook: socFacebook,
+          instagram: socInstagram,
+        });
+      }
+
+      if (setContactInfo) {
+        setContactInfo({
+          email: contactEmail,
+          phone: contactPhone,
+          address: contactAddress,
+          hqAddress: contactHqAddress,
+          hotline: contactHotline,
+          diasporaHotline: contactDiasporaHotline,
+        });
+      }
+
+      if (setTeamMembers) {
+        setTeamMembers(localTeam);
+      }
+
+      setContactButtonSettings({
+        action: btnAction,
+        linkUrl: btnLinkUrl,
+        linkLabel: btnLinkLabel,
       });
+
+      logActivity("system", "✅ Home settings updated by admin");
+      showAlert(
+        "✅ Settings Saved",
+        "All home screen, contact, and button settings have been updated!"
+      );
+    } catch (error: any) {
+      console.error("Error saving home settings:", error);
+      showAlert("❌ Error", `Failed to save settings: ${error.message || "Please try again."}`);
+    } finally {
+      setIsSavingHomeSettings(false);
     }
-    if (setTeamMembers) {
-      setTeamMembers(localTeam);
-    }
-    setContactButtonSettings({
-      action: btnAction,
-      linkUrl: btnLinkUrl,
-      linkLabel: btnLinkLabel,
-    });
-    logActivity("system", "✅ Home settings updated by admin");
-    showAlert(
-      "✅ Settings Saved",
-      "All home screen, contact, and button settings have been updated!"
-    );
   };
 
   // ============================================================
@@ -1216,6 +1237,15 @@ export default function AdminPanel({
   };
 
   // ============================================================
+  // RESTORE ORIGINAL CONTENT
+  // ============================================================
+  const handleRestoreOriginalContent = async () => {
+    if (restoreOriginalWebsiteContent) {
+      await restoreOriginalWebsiteContent();
+    }
+  };
+
+  // ============================================================
   // RENDER
   // ============================================================
   return (
@@ -1388,6 +1418,21 @@ export default function AdminPanel({
             >
               <Tags className="w-4 h-4" />
               Catalogs
+            </button>
+          )}
+
+          {isOwner && (
+            <button
+              onClick={() => {
+                if (window.confirm("⚠️ This will restore all website content to the original default data. Continue?")) {
+                  handleRestoreOriginalContent();
+                }
+              }}
+              disabled={isRestoring}
+              className="text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-2.5 cursor-pointer flex-shrink-0 transition-all hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30 bg-white dark:bg-zinc-900"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRestoring ? "animate-spin" : ""}`} />
+              {isRestoring ? "Restoring..." : "Restore Original"}
             </button>
           )}
         </div>
