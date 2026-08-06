@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import {
   Building2,
   MessageSquare,
@@ -53,7 +53,6 @@ import { auth, db } from "../firebase";
 import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  signInWithEmailAndPassword,
 } from "firebase/auth";
 
 interface AdminPanelProps {
@@ -297,6 +296,7 @@ export default function AdminPanel({
   // ============================================================
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [propTitle, setPropTitle] = useState("");
   const [propLocation, setPropLocation] = useState("");
   const [propSubCity, setPropSubCity] = useState("Bole");
@@ -518,7 +518,7 @@ export default function AdminPanel({
   };
 
   // ============================================================
-  // PROPERTY HANDLERS - FIXED WITH DIRECT FIRESTORE WRITE
+  // PROPERTY HANDLERS - FULLY FIXED WITH FIRESTORE DIRECT WRITE
   // ============================================================
   const handleSaveProperty = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -526,6 +526,8 @@ export default function AdminPanel({
       showAlert("Permission Denied", "You don't have permission to edit properties.");
       return;
     }
+
+    setIsSaving(true);
 
     try {
       // Build the property data object
@@ -583,8 +585,8 @@ export default function AdminPanel({
           prev.map((p) => (p.id === editingPropertyId ? { ...propertyData, id: editingPropertyId } : p))
         );
         
-        logActivity("property", `Updated property: ${propTitle}`);
-        showAlert("Property Updated", `"${propTitle}" has been successfully updated.`);
+        logActivity("property", `✅ Updated property: ${propTitle}`);
+        showAlert("✅ Success!", `"${propTitle}" has been successfully updated.`);
         
       } else {
         // ✅ CREATE MODE: Add new property to Firestore
@@ -596,8 +598,8 @@ export default function AdminPanel({
         // Update local state
         setProperties((prev) => [newProperty, ...prev]);
         
-        logActivity("property", `Added new property: ${propTitle}`);
-        showAlert("Property Added", `"${propTitle}" has been successfully added.`);
+        logActivity("property", `✅ Added new property: ${propTitle}`);
+        showAlert("✅ Success!", `"${propTitle}" has been successfully added.`);
       }
       
       // Reset form and close
@@ -605,8 +607,10 @@ export default function AdminPanel({
       setIsAddingProperty(false);
       
     } catch (error: any) {
-      console.error("Error saving property:", error);
-      showAlert("Error", `Failed to save property: ${error.message || "Please try again."}`);
+      console.error("❌ Error saving property:", error);
+      showAlert("❌ Error", `Failed to save property: ${error.message || "Please try again."}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -657,7 +661,7 @@ export default function AdminPanel({
     const propertyToDelete = properties.find(p => p.id === id);
     
     showConfirm(
-      "Confirm Property Deletion",
+      "⚠️ Confirm Property Deletion",
       `Are you sure you want to delete "${propertyToDelete?.title || 'this property'}"? This action is irreversible.`,
       async () => {
         try {
@@ -667,11 +671,11 @@ export default function AdminPanel({
           // Remove from local state
           setProperties((prev) => prev.filter((p) => p.id !== id));
           
-          logActivity("property", `Deleted property: ${propertyToDelete?.title || id}`);
-          showAlert("Property Deleted", "The property has been removed.");
+          logActivity("property", `🗑️ Deleted property: ${propertyToDelete?.title || id}`);
+          showAlert("✅ Deleted", "The property has been removed.");
         } catch (error: any) {
-          console.error("Error deleting property:", error);
-          showAlert("Error", `Failed to delete property: ${error.message}`);
+          console.error("❌ Error deleting property:", error);
+          showAlert("❌ Error", `Failed to delete property: ${error.message}`);
         }
       }
     );
@@ -713,9 +717,10 @@ export default function AdminPanel({
   // ============================================================
   // BLOG HANDLERS
   // ============================================================
-  const handleSaveBlog = (e: React.FormEvent) => {
+  const handleSaveBlog = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
+    
     const newB: Blog = {
       id: `blog-${Math.floor(Math.random() * 90000 + 10000)}`,
       title: blogTitle,
@@ -726,30 +731,41 @@ export default function AdminPanel({
       date: new Date().toISOString().split("T")[0],
       author: blogAuthor,
     };
-    setBlogs((prev) => [newB, ...prev]);
-    setIsAddingBlog(false);
-    setBlogTitle("");
-    setBlogExcerpt("");
-    setBlogContent("");
-    setBlogCategory("Properties");
-    setBlogAuthor("Admin Office");
-    setBlogImage(
-      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80"
-    );
-    logActivity("blog", `Added new blog: ${blogTitle}`);
-    showAlert("Blog Added", `"${blogTitle}" has been published.`);
+    
+    try {
+      await setDoc(doc(db, "blogs", newB.id), newB);
+      setBlogs((prev) => [newB, ...prev]);
+      setIsAddingBlog(false);
+      setBlogTitle("");
+      setBlogExcerpt("");
+      setBlogContent("");
+      setBlogCategory("Properties");
+      setBlogAuthor("Admin Office");
+      setBlogImage(
+        "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80"
+      );
+      logActivity("blog", `✅ Added new blog: ${blogTitle}`);
+      showAlert("✅ Blog Added", `"${blogTitle}" has been published.`);
+    } catch (error: any) {
+      showAlert("❌ Error", `Failed to save blog: ${error.message}`);
+    }
   };
 
-  const handleDeleteBlog = (id: string) => {
+  const handleDeleteBlog = async (id: string) => {
     if (!canEditCore) return;
     const blogToDelete = blogs.find(b => b.id === id);
     showConfirm(
       "Confirm Blog Deletion",
       `Are you sure you want to delete "${blogToDelete?.title || 'this blog'}"?`,
-      () => {
-        setBlogs((prev) => prev.filter((b) => b.id !== id));
-        logActivity("blog", `Deleted blog: ${blogToDelete?.title || id}`);
-        showAlert("Blog Deleted", "The blog has been removed.");
+      async () => {
+        try {
+          await deleteDoc(doc(db, "blogs", id));
+          setBlogs((prev) => prev.filter((b) => b.id !== id));
+          logActivity("blog", `🗑️ Deleted blog: ${blogToDelete?.title || id}`);
+          showAlert("✅ Blog Deleted", "The blog has been removed.");
+        } catch (error: any) {
+          showAlert("❌ Error", `Failed to delete blog: ${error.message}`);
+        }
       }
     );
   };
@@ -757,9 +773,10 @@ export default function AdminPanel({
   // ============================================================
   // TESTIMONIAL HANDLERS
   // ============================================================
-  const handleSaveTestimonial = (e: React.FormEvent) => {
+  const handleSaveTestimonial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
+    
     const newT: Testimonial = {
       id: `t-${Math.floor(Math.random() * 90000 + 10000)}`,
       clientName: testClient,
@@ -768,26 +785,37 @@ export default function AdminPanel({
       propertyPurchased: testPurchased,
       image: testImage || undefined,
     };
-    setTestimonials((prev) => [...prev, newT]);
-    setIsAddingTestimonial(false);
-    setTestClient("");
-    setTestText("");
-    setTestPurchased("Executive Suite CMC");
-    setTestImage("");
-    logActivity("testimonial", `Added testimonial from ${testClient}`);
-    showAlert("Testimonial Added", `Testimonial from ${testClient} has been published.`);
+    
+    try {
+      await setDoc(doc(db, "testimonials", newT.id), newT);
+      setTestimonials((prev) => [...prev, newT]);
+      setIsAddingTestimonial(false);
+      setTestClient("");
+      setTestText("");
+      setTestPurchased("Executive Suite CMC");
+      setTestImage("");
+      logActivity("testimonial", `✅ Added testimonial from ${testClient}`);
+      showAlert("✅ Testimonial Added", `Testimonial from ${testClient} has been published.`);
+    } catch (error: any) {
+      showAlert("❌ Error", `Failed to save testimonial: ${error.message}`);
+    }
   };
 
-  const handleDeleteTestimonial = (id: string) => {
+  const handleDeleteTestimonial = async (id: string) => {
     if (!canEditCore) return;
     const testimonialToDelete = testimonials.find(t => t.id === id);
     showConfirm(
       "Confirm Testimonial Deletion",
       `Are you sure you want to delete this testimonial from ${testimonialToDelete?.clientName || 'this client'}?`,
-      () => {
-        setTestimonials((prev) => prev.filter((t) => t.id !== id));
-        logActivity("testimonial", `Deleted testimonial from ${testimonialToDelete?.clientName || id}`);
-        showAlert("Testimonial Deleted", "The testimonial has been removed.");
+      async () => {
+        try {
+          await deleteDoc(doc(db, "testimonials", id));
+          setTestimonials((prev) => prev.filter((t) => t.id !== id));
+          logActivity("testimonial", `🗑️ Deleted testimonial from ${testimonialToDelete?.clientName || id}`);
+          showAlert("✅ Testimonial Deleted", "The testimonial has been removed.");
+        } catch (error: any) {
+          showAlert("❌ Error", `Failed to delete testimonial: ${error.message}`);
+        }
       }
     );
   };
@@ -795,9 +823,10 @@ export default function AdminPanel({
   // ============================================================
   // ADS HANDLERS
   // ============================================================
-  const handleSaveAd = (e: React.FormEvent) => {
+  const handleSaveAd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
+    
     const newAd: PopupAd = {
       id: `pop-${Math.floor(Math.random() * 90000 + 10000)}`,
       title: adTitle,
@@ -808,34 +837,53 @@ export default function AdminPanel({
       isActive: true,
       displayFrequency: adFreq,
     };
-    setPopupAds((prev) => [newAd, ...prev]);
-    setIsAddingAd(false);
-    setAdTitle("");
-    setAdContent("");
-    setAdCtaLink("properties");
-    logActivity("campaign", `Added new pop-up ad: ${adTitle}`);
-    showAlert("Pop-up Ad Added", `"${adTitle}" has been created.`);
+    
+    try {
+      await setDoc(doc(db, "popup_ads", newAd.id), newAd);
+      setPopupAds((prev) => [newAd, ...prev]);
+      setIsAddingAd(false);
+      setAdTitle("");
+      setAdContent("");
+      setAdCtaLink("properties");
+      logActivity("campaign", `✅ Added new pop-up ad: ${adTitle}`);
+      showAlert("✅ Pop-up Ad Added", `"${adTitle}" has been created.`);
+    } catch (error: any) {
+      showAlert("❌ Error", `Failed to save pop-up: ${error.message}`);
+    }
   };
 
-  const toggleAdActiveState = (id: string) => {
+  const toggleAdActiveState = async (id: string) => {
     if (!canEditCore) return;
-    setPopupAds((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, isActive: !a.isActive } : a))
-    );
     const ad = popupAds.find(a => a.id === id);
-    logActivity("campaign", `${ad?.isActive ? 'Deactivated' : 'Activated'} pop-up ad: ${ad?.title || id}`);
+    if (!ad) return;
+    
+    try {
+      await setDoc(doc(db, "popup_ads", id), { ...ad, isActive: !ad.isActive }, { merge: true });
+      setPopupAds((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, isActive: !a.isActive } : a))
+      );
+      logActivity("campaign", `${ad.isActive ? 'Deactivated' : 'Activated'} pop-up ad: ${ad.title || id}`);
+      showAlert("✅ Status Updated", `Pop-up "${ad.title}" is now ${!ad.isActive ? 'active' : 'inactive'}.`);
+    } catch (error: any) {
+      showAlert("❌ Error", `Failed to update status: ${error.message}`);
+    }
   };
 
-  const handleDeleteAd = (id: string) => {
+  const handleDeleteAd = async (id: string) => {
     if (!canEditCore) return;
     const adToDelete = popupAds.find(a => a.id === id);
     showConfirm(
       "Confirm Pop-up Deletion",
       `Are you sure you want to delete "${adToDelete?.title || 'this pop-up'}"?`,
-      () => {
-        setPopupAds((prev) => prev.filter((a) => a.id !== id));
-        logActivity("campaign", `Deleted pop-up ad: ${adToDelete?.title || id}`);
-        showAlert("Pop-up Deleted", "The pop-up ad has been removed.");
+      async () => {
+        try {
+          await deleteDoc(doc(db, "popup_ads", id));
+          setPopupAds((prev) => prev.filter((a) => a.id !== id));
+          logActivity("campaign", `🗑️ Deleted pop-up ad: ${adToDelete?.title || id}`);
+          showAlert("✅ Pop-up Deleted", "The pop-up ad has been removed.");
+        } catch (error: any) {
+          showAlert("❌ Error", `Failed to delete pop-up: ${error.message}`);
+        }
       }
     );
   };
@@ -843,26 +891,36 @@ export default function AdminPanel({
   // ============================================================
   // MESSAGES HANDLERS
   // ============================================================
-  const changeMessageStatus = (
-    id: string,
-    newStatus: "New" | "Replied" | "Closed"
-  ) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status: newStatus } : m))
-    );
+  const changeMessageStatus = async (id: string, newStatus: "New" | "Replied" | "Closed") => {
     const message = messages.find(m => m.id === id);
-    logActivity("message", `Message from ${message?.fullName || 'client'} marked as ${newStatus}`);
+    if (!message) return;
+    
+    try {
+      await setDoc(doc(db, "messages", id), { ...message, status: newStatus }, { merge: true });
+      setMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, status: newStatus } : m))
+      );
+      logActivity("message", `Message from ${message?.fullName || 'client'} marked as ${newStatus}`);
+      showAlert("✅ Status Updated", `Message marked as "${newStatus}".`);
+    } catch (error: any) {
+      showAlert("❌ Error", `Failed to update status: ${error.message}`);
+    }
   };
 
-  const handleDeleteMessage = (id: string) => {
+  const handleDeleteMessage = async (id: string) => {
     const messageToDelete = messages.find(m => m.id === id);
     showConfirm(
       "Delete Inquiry Log",
       `Are you sure you want to delete this message from ${messageToDelete?.fullName || 'this client'}? This is irreversible.`,
-      () => {
-        setMessages((prev) => prev.filter((m) => m.id !== id));
-        logActivity("message", `Deleted message from ${messageToDelete?.fullName || id}`);
-        showAlert("Message Deleted", "The inquiry has been removed.");
+      async () => {
+        try {
+          await deleteDoc(doc(db, "messages", id));
+          setMessages((prev) => prev.filter((m) => m.id !== id));
+          logActivity("message", `🗑️ Deleted message from ${messageToDelete?.fullName || id}`);
+          showAlert("✅ Message Deleted", "The inquiry has been removed.");
+        } catch (error: any) {
+          showAlert("❌ Error", `Failed to delete message: ${error.message}`);
+        }
       }
     );
   };
@@ -909,9 +967,9 @@ export default function AdminPanel({
       linkUrl: btnLinkUrl,
       linkLabel: btnLinkLabel,
     });
-    logActivity("system", "Home settings updated by admin");
+    logActivity("system", "✅ Home settings updated by admin");
     showAlert(
-      "Settings Saved",
+      "✅ Settings Saved",
       "All home screen, contact, and button settings have been updated!"
     );
   };
@@ -942,7 +1000,7 @@ export default function AdminPanel({
           await sendPasswordResetEmail(auth, userEmail);
           showAlert("Password Reset Email Sent", `A reset link has been sent to ${userEmail}.`);
         }
-        showAlert("User Updated", "User information updated successfully.");
+        showAlert("✅ User Updated", "User information updated successfully.");
         logActivity("auth", `User ${userFullName} (${userEmail}) updated by ${loggedInUser?.fullName}`);
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, userEmail, userPassword);
@@ -957,7 +1015,7 @@ export default function AdminPanel({
         };
         await setDoc(doc(db, "users", uid), newUser);
         setUsers((prev) => [...prev, newUser]);
-        showAlert("User Created", `User ${userFullName} has been created. They can now log in.`);
+        showAlert("✅ User Created", `User ${userFullName} has been created. They can now log in.`);
         logActivity("auth", `New user created: ${userFullName} (${userEmail}) by ${loggedInUser?.fullName}`);
       }
       resetUserForm();
@@ -967,7 +1025,7 @@ export default function AdminPanel({
       if (err.code === "auth/email-already-in-use") msg = "Email already registered.";
       else if (err.code === "auth/weak-password") msg = "Password too weak. Use at least 6 characters.";
       else if (err.code === "auth/invalid-email") msg = "Invalid email address.";
-      showAlert("Error", msg);
+      showAlert("❌ Error", msg);
     }
   };
 
@@ -994,12 +1052,16 @@ export default function AdminPanel({
     const user = users.find((u) => u.id === id);
     if (!user) return;
     const newStatus = !user.isActive;
-    await setDoc(doc(db, "users", id), { isActive: newStatus }, { merge: true });
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, isActive: newStatus } : u))
-    );
-    logActivity("auth", `User ${user.fullName} ${newStatus ? "activated" : "deactivated"} by ${loggedInUser?.fullName}`);
-    showAlert("Status Updated", `${user.fullName} is now ${newStatus ? "active" : "inactive"}.`);
+    try {
+      await setDoc(doc(db, "users", id), { isActive: newStatus }, { merge: true });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, isActive: newStatus } : u))
+      );
+      logActivity("auth", `User ${user.fullName} ${newStatus ? "activated" : "deactivated"} by ${loggedInUser?.fullName}`);
+      showAlert("✅ Status Updated", `${user.fullName} is now ${newStatus ? "active" : "inactive"}.`);
+    } catch (error: any) {
+      showAlert("❌ Error", `Failed to update status: ${error.message}`);
+    }
   };
 
   const handleDeleteUser = async (id: string) => {
@@ -1032,11 +1094,11 @@ export default function AdminPanel({
           const userDocRef = doc(db, "users", id);
           await deleteDoc(userDocRef);
           setUsers((prev) => (prev || []).filter((u) => u.id !== id));
-          logActivity("auth", `User ${userToDelete.fullName} (${userToDelete.email}) deleted by ${loggedInUser?.fullName}`);
-          showAlert("User Deleted", "The user has been removed from the system.");
+          logActivity("auth", `🗑️ User ${userToDelete.fullName} (${userToDelete.email}) deleted by ${loggedInUser?.fullName}`);
+          showAlert("✅ User Deleted", "The user has been removed from the system.");
         } catch (err: any) {
           console.error("Delete user error:", err);
-          showAlert("Error", err.message);
+          showAlert("❌ Error", err.message);
         }
       }
     );
@@ -1055,7 +1117,7 @@ export default function AdminPanel({
   // ============================================================
   // PROJECTS HANDLERS
   // ============================================================
-  const handleSaveProjectLocal = (e: React.FormEvent) => {
+  const handleSaveProjectLocal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
     const parsedAchievements = projAchievements
@@ -1063,47 +1125,49 @@ export default function AdminPanel({
       .map((s) => s.trim())
       .filter(Boolean);
 
-    if (editingProjectId) {
-      setProjects((prev) =>
-        prev.map((p) =>
-          p.id === editingProjectId
-            ? {
-                ...p,
-                year: projYear,
-                title: projTitle,
-                subCity: projSubCity,
-                description: projDescription,
-                achievements:
-                  parsedAchievements.length > 0 ? parsedAchievements : p.achievements,
-                image: projImage,
-                specs: projSpecs,
-              }
-            : p
-        )
-      );
-      setEditingProjectId(null);
-      logActivity("project", `Updated project: ${projTitle}`);
-      showAlert("Project Updated", `"${projTitle}" has been updated.`);
-    } else {
-      const newP: Project = {
-        id: `proj-${Math.floor(Math.random() * 90000 + 10000)}`,
-        year: projYear || "2026",
-        title: projTitle,
-        subCity: projSubCity,
-        description: projDescription,
-        achievements:
-          parsedAchievements.length > 0
-            ? parsedAchievements
-            : ["Successfully delivered and verified"],
-        image: projImage,
-        specs: projSpecs,
-      };
-      setProjects((prev) => [...prev, newP]);
-      logActivity("project", `Added new project: ${projTitle}`);
-      showAlert("Project Saved", `"${projTitle}" has been added.`);
+    try {
+      if (editingProjectId) {
+        const updatedProject = {
+          year: projYear,
+          title: projTitle,
+          subCity: projSubCity,
+          description: projDescription,
+          achievements: parsedAchievements.length > 0 ? parsedAchievements : [],
+          image: projImage,
+          specs: projSpecs,
+        };
+        await setDoc(doc(db, "projects", editingProjectId), { ...updatedProject, id: editingProjectId }, { merge: true });
+        setProjects((prev) =>
+          prev.map((p) =>
+            p.id === editingProjectId
+              ? { ...updatedProject, id: editingProjectId }
+              : p
+          )
+        );
+        setEditingProjectId(null);
+        logActivity("project", `✅ Updated project: ${projTitle}`);
+        showAlert("✅ Project Updated", `"${projTitle}" has been updated.`);
+      } else {
+        const newP: Project = {
+          id: `proj-${Math.floor(Math.random() * 90000 + 10000)}`,
+          year: projYear || "2026",
+          title: projTitle,
+          subCity: projSubCity,
+          description: projDescription,
+          achievements: parsedAchievements.length > 0 ? parsedAchievements : ["Successfully delivered and verified"],
+          image: projImage,
+          specs: projSpecs,
+        };
+        await setDoc(doc(db, "projects", newP.id), newP);
+        setProjects((prev) => [...prev, newP]);
+        logActivity("project", `✅ Added new project: ${projTitle}`);
+        showAlert("✅ Project Saved", `"${projTitle}" has been added.`);
+      }
+      resetProjForm();
+      setIsAddingProject(false);
+    } catch (error: any) {
+      showAlert("❌ Error", `Failed to save project: ${error.message}`);
     }
-    resetProjForm();
-    setIsAddingProject(false);
   };
 
   const handleEditProjectClick = (p: Project) => {
@@ -1119,16 +1183,21 @@ export default function AdminPanel({
     setIsAddingProject(true);
   };
 
-  const handleDeleteProjectLocal = (id: string) => {
+  const handleDeleteProjectLocal = async (id: string) => {
     if (!canEditCore) return;
     const projectToDelete = projects.find(p => p.id === id);
     showConfirm(
       "Confirm Showcase Deletion",
       `Are you sure you want to delete "${projectToDelete?.title || 'this project'}"? This is irreversible.`,
-      () => {
-        setProjects((prev) => prev.filter((p) => p.id !== id));
-        logActivity("project", `Deleted project: ${projectToDelete?.title || id}`);
-        showAlert("Project Deleted", "The project has been removed.");
+      async () => {
+        try {
+          await deleteDoc(doc(db, "projects", id));
+          setProjects((prev) => prev.filter((p) => p.id !== id));
+          logActivity("project", `🗑️ Deleted project: ${projectToDelete?.title || id}`);
+          showAlert("✅ Project Deleted", "The project has been removed.");
+        } catch (error: any) {
+          showAlert("❌ Error", `Failed to delete project: ${error.message}`);
+        }
       }
     );
   };
@@ -1489,7 +1558,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* TAB 1: PROPERTIES MANAGEMENT - FIXED */}
+          {/* TAB 1: PROPERTIES MANAGEMENT - FULLY FIXED */}
           {activeAdminTab === "properties" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -1524,7 +1593,7 @@ export default function AdminPanel({
                 )}
               </div>
 
-              {/* Property Form - Fixed */}
+              {/* Property Form - FIXED */}
               <AnimatePresence>
                 {isAddingProperty && canEditCore && (
                   <motion.form
@@ -2052,7 +2121,7 @@ export default function AdminPanel({
                       </div>
                     </div>
 
-                    {/* Form Buttons */}
+                    {/* Form Buttons with Loading State */}
                     <div className="flex gap-2 justify-end pt-2 border-t border-zinc-200 dark:border-zinc-700 mt-4">
                       <button
                         type="button"
@@ -2066,9 +2135,21 @@ export default function AdminPanel({
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white dark:text-zinc-100 transition cursor-pointer shadow-sm"
+                        disabled={isSaving}
+                        className={`px-5 py-2 rounded-lg text-xs font-bold text-white transition cursor-pointer shadow-sm ${
+                          isSaving
+                            ? "bg-blue-400 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700"
+                        }`}
                       >
-                        {editingPropertyId ? "💾 Save Changes" : "📤 Publish Asset"}
+                        {isSaving ? (
+                          <span className="flex items-center gap-2">
+                            <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Saving...
+                          </span>
+                        ) : (
+                          editingPropertyId ? "💾 Save Changes" : "📤 Publish Asset"
+                        )}
                       </button>
                     </div>
                   </motion.form>
