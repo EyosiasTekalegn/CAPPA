@@ -56,7 +56,6 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 
-// ==================== Interfaces ====================
 interface AdminPanelProps {
   loggedInUser: AdminUser | null;
   properties: Property[];
@@ -530,10 +529,24 @@ export default function AdminPanel({
       return;
     }
 
+    // Validate image sizes
+    if (propImg && propImg.length > 1000000) {
+      showAlert("Image Too Large", "The featured image is too large (>1MB). Please use a smaller image.");
+      return;
+    }
+    if (propGallery) {
+      const galleryUrls = propGallery.split('\n').filter(Boolean);
+      for (const url of galleryUrls) {
+        if (url.length > 1000000) {
+          showAlert("Image Too Large", "One of the gallery images is too large (>1MB). Please use smaller images.");
+          return;
+        }
+      }
+    }
+
     setIsSaving(true);
 
     try {
-      // Build the property data object
       const propertyData = {
         title: propTitle,
         location: propLocation,
@@ -579,36 +592,24 @@ export default function AdminPanel({
       };
 
       if (editingPropertyId) {
-        // ✅ EDIT MODE: Update existing property in Firestore
         const propertyRef = doc(db, "properties", editingPropertyId);
         await setDoc(propertyRef, { ...propertyData, id: editingPropertyId }, { merge: true });
-        
-        // Update local state
         setProperties((prev) =>
           prev.map((p) => (p.id === editingPropertyId ? { ...propertyData, id: editingPropertyId } : p))
         );
-        
         logActivity("property", `✅ Updated property: ${propTitle}`);
         showAlert("✅ Success!", `"${propTitle}" has been successfully updated.`);
-        
       } else {
-        // ✅ CREATE MODE: Add new property to Firestore
         const newId = `prop-${Math.floor(Math.random() * 90000 + 10000)}`;
         const newProperty = { ...propertyData, id: newId };
-        
         await setDoc(doc(db, "properties", newId), newProperty);
-        
-        // Update local state
         setProperties((prev) => [newProperty, ...prev]);
-        
         logActivity("property", `✅ Added new property: ${propTitle}`);
         showAlert("✅ Success!", `"${propTitle}" has been successfully added.`);
       }
-      
-      // Reset form and close
+
       resetPropForm();
       setIsAddingProperty(false);
-      
     } catch (error: any) {
       console.error("❌ Error saving property:", error);
       showAlert("❌ Error", `Failed to save property: ${error.message || "Please try again."}`);
@@ -622,8 +623,6 @@ export default function AdminPanel({
       showAlert("Permission Denied", "You don't have permission to edit properties.");
       return;
     }
-    
-    // Populate form with property data
     setEditingPropertyId(p.id);
     setPropTitle(p.title);
     setPropLocation(p.location);
@@ -650,10 +649,7 @@ export default function AdminPanel({
     setPropVirtualTourTitle(p.virtualTour?.title || "Virtual Environment Preview");
     setPropVirtualTourRooms(p.virtualTour?.rooms?.map((r) => ({ name: r.name, image: r.image })) || []);
     setPropDescription(p.description);
-    
-    // Open the form
     setIsAddingProperty(true);
-    // Scroll to form
     setTimeout(() => {
       document.querySelector('.admin-property-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
@@ -662,18 +658,13 @@ export default function AdminPanel({
   const handleDeleteProperty = async (id: string) => {
     if (!canEditCore) return;
     const propertyToDelete = properties.find(p => p.id === id);
-    
     showConfirm(
       "⚠️ Confirm Property Deletion",
       `Are you sure you want to delete "${propertyToDelete?.title || 'this property'}"? This action is irreversible.`,
       async () => {
         try {
-          // Delete from Firestore
           await deleteDoc(doc(db, "properties", id));
-          
-          // Remove from local state
           setProperties((prev) => prev.filter((p) => p.id !== id));
-          
           logActivity("property", `🗑️ Deleted property: ${propertyToDelete?.title || id}`);
           showAlert("✅ Deleted", "The property has been removed.");
         } catch (error: any) {
@@ -723,7 +714,6 @@ export default function AdminPanel({
   const handleSaveBlog = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
-    
     const newB: Blog = {
       id: `blog-${Math.floor(Math.random() * 90000 + 10000)}`,
       title: blogTitle,
@@ -734,7 +724,6 @@ export default function AdminPanel({
       date: new Date().toISOString().split("T")[0],
       author: blogAuthor,
     };
-    
     try {
       await setDoc(doc(db, "blogs", newB.id), newB);
       setBlogs((prev) => [newB, ...prev]);
@@ -779,7 +768,6 @@ export default function AdminPanel({
   const handleSaveTestimonial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
-    
     const newT: Testimonial = {
       id: `t-${Math.floor(Math.random() * 90000 + 10000)}`,
       clientName: testClient,
@@ -788,7 +776,6 @@ export default function AdminPanel({
       propertyPurchased: testPurchased,
       image: testImage || undefined,
     };
-    
     try {
       await setDoc(doc(db, "testimonials", newT.id), newT);
       setTestimonials((prev) => [...prev, newT]);
@@ -829,7 +816,6 @@ export default function AdminPanel({
   const handleSaveAd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
-    
     const newAd: PopupAd = {
       id: `pop-${Math.floor(Math.random() * 90000 + 10000)}`,
       title: adTitle,
@@ -840,7 +826,6 @@ export default function AdminPanel({
       isActive: true,
       displayFrequency: adFreq,
     };
-    
     try {
       await setDoc(doc(db, "popup_ads", newAd.id), newAd);
       setPopupAds((prev) => [newAd, ...prev]);
@@ -859,7 +844,6 @@ export default function AdminPanel({
     if (!canEditCore) return;
     const ad = popupAds.find(a => a.id === id);
     if (!ad) return;
-    
     try {
       await setDoc(doc(db, "popup_ads", id), { ...ad, isActive: !ad.isActive }, { merge: true });
       setPopupAds((prev) =>
@@ -897,7 +881,6 @@ export default function AdminPanel({
   const changeMessageStatus = async (id: string, newStatus: "New" | "Replied" | "Closed") => {
     const message = messages.find(m => m.id === id);
     if (!message) return;
-    
     try {
       await setDoc(doc(db, "messages", id), { ...message, status: newStatus }, { merge: true });
       setMessages((prev) =>
@@ -1437,9 +1420,8 @@ export default function AdminPanel({
           )}
         </div>
 
-        {/* Dynamic Display Panel */}
         <div className="lg:col-span-9 space-y-6">
-          {/* TAB 0: DASHBOARD */}
+          {/* ==================== DASHBOARD ==================== */}
           {activeAdminTab === "dashboard" && !isSales && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-4">
@@ -1603,7 +1585,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* TAB 1: PROPERTIES MANAGEMENT - FULLY FIXED */}
+          {/* ==================== PROPERTIES ==================== */}
           {activeAdminTab === "properties" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -1638,7 +1620,6 @@ export default function AdminPanel({
                 )}
               </div>
 
-              {/* Property Form - FIXED */}
               <AnimatePresence>
                 {isAddingProperty && canEditCore && (
                   <motion.form
@@ -1651,9 +1632,8 @@ export default function AdminPanel({
                     <h4 className="font-bold text-lg font-serif text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-700 pb-3">
                       {editingPropertyId ? "✏️ Edit Property" : "➕ Add New Property"}
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Title */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Property Listing Title *
@@ -1667,8 +1647,6 @@ export default function AdminPanel({
                           className="w-full p-3 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
                         />
                       </div>
-
-                      {/* Location */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Select Location *
@@ -1686,8 +1664,6 @@ export default function AdminPanel({
                           }))}
                         />
                       </div>
-
-                      {/* Property Type */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Property Type *
@@ -1702,8 +1678,6 @@ export default function AdminPanel({
                           }))}
                         />
                       </div>
-
-                      {/* Price */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Base Listing Price (ETB) *
@@ -1716,8 +1690,6 @@ export default function AdminPanel({
                           className="w-full p-3 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
                         />
                       </div>
-
-                      {/* Area */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Total Area Volume (sqm) *
@@ -1730,8 +1702,6 @@ export default function AdminPanel({
                           className="w-full p-3 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
                         />
                       </div>
-
-                      {/* Bedrooms */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Bedrooms *
@@ -1744,8 +1714,6 @@ export default function AdminPanel({
                           className="w-full p-3 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
                         />
                       </div>
-
-                      {/* Bathrooms */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Bathrooms *
@@ -1758,8 +1726,6 @@ export default function AdminPanel({
                           className="w-full p-3 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
                         />
                       </div>
-
-                      {/* Construction Status */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Construction Status *
@@ -1777,8 +1743,6 @@ export default function AdminPanel({
                           ]}
                         />
                       </div>
-
-                      {/* Completion Percentage */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Completion Percentage ({propCompletionPercentage}%) *
@@ -1794,8 +1758,6 @@ export default function AdminPanel({
                           className="w-full accent-red-600 mt-2 cursor-pointer h-2 bg-zinc-200 rounded-lg appearance-none dark:bg-zinc-800"
                         />
                       </div>
-
-                      {/* Floor Count */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Floor Count *
@@ -1809,8 +1771,6 @@ export default function AdminPanel({
                           className="w-full p-2.5 rounded-lg border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-sm focus:ring-2 focus:ring-red-600 outline-none transition cursor-text"
                         />
                       </div>
-
-                      {/* Total Units */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Total Units *
@@ -1824,8 +1784,6 @@ export default function AdminPanel({
                           className="w-full p-2.5 rounded-lg border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 text-sm focus:ring-2 focus:ring-red-600 outline-none transition cursor-text"
                         />
                       </div>
-
-                      {/* Availability */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Listing Availability Status *
@@ -1841,8 +1799,6 @@ export default function AdminPanel({
                           ]}
                         />
                       </div>
-
-                      {/* Show on Homepage */}
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-2">
                           Visibility Options
@@ -1864,8 +1820,6 @@ export default function AdminPanel({
                           If unchecked, this listing will only be visible in Admin and direct links.
                         </p>
                       </div>
-
-                      {/* Images */}
                       <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800/60">
                         <ImageInput
                           value={propImg}
@@ -1879,8 +1833,6 @@ export default function AdminPanel({
                           multiline={true}
                         />
                       </div>
-
-                      {/* Amenities */}
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-2">
                           Select Executive Services & Infrastructure
@@ -1929,8 +1881,6 @@ export default function AdminPanel({
                           )}
                         </div>
                       </div>
-
-                      {/* Units Info */}
                       <div className="sm:col-span-2 space-y-6 bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800/60 mt-2 mb-4">
                         <div>
                           <h3 className="text-sm font-bold uppercase tracking-widest text-[#DC2626] dark:text-red-500 flex items-center justify-between">
@@ -2036,36 +1986,26 @@ export default function AdminPanel({
                           </div>
                         </div>
                       </div>
-
-                      {/* Map Embed URL */}
                       <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
-                          Google Maps Place URL or Embed Link (Optional)
-                        </label>
-                        <input
-                          type="text"
+                        <LinkInputWithUpload
                           value={propMapEmbedUrl}
-                          onChange={(e) => setPropMapEmbedUrl(e.target.value)}
-                          placeholder="https://maps.google.com/?q=..."
-                          className="w-full p-3 text-xs mb-4 font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
+                          onChange={(val) => setPropMapEmbedUrl(val)}
+                          label="Google Maps Place URL or Embed Link"
+                          placeholder="https://maps.google.com/?q=... or drop a map screenshot"
+                          accept="image"
+                          hint="Paste a Google Maps link or drag/drop a map screenshot"
                         />
                       </div>
-
-                      {/* Video Tour URL */}
                       <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
-                          Realistic Video Tour URL (Optional)
-                        </label>
-                        <input
-                          type="text"
+                        <LinkInputWithUpload
                           value={propVideoTourUrl}
-                          onChange={(e) => setPropVideoTourUrl(e.target.value)}
-                          placeholder="https://youtube.com/watch?v=..."
-                          className="w-full p-3 text-xs mb-4 font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
+                          onChange={(val) => setPropVideoTourUrl(val)}
+                          label="Realistic Video Tour URL"
+                          placeholder="https://youtube.com/watch?v=... or drop a video/thumbnail"
+                          accept="image"
+                          hint="Paste a YouTube/Vimeo link or drag/drop a video thumbnail"
                         />
                       </div>
-
-                      {/* Virtual Tour */}
                       <div className="sm:col-span-2 grid grid-cols-1 gap-4 bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800/60 mt-2 mb-4">
                         <div className="">
                           <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-800 dark:text-zinc-200 flex items-center justify-between">
@@ -2087,7 +2027,6 @@ export default function AdminPanel({
                             Configure the 360 viewer fallback if video tour isn't supplied.
                           </p>
                         </div>
-
                         <div>
                           <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                             Global Virtual Tour Title
@@ -2100,7 +2039,6 @@ export default function AdminPanel({
                             className="w-full p-3 text-xs font-semibold rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all duration-200"
                           />
                         </div>
-
                         <div className="space-y-4 mt-2">
                           {propVirtualTourRooms.map((room, idx) => (
                             <div
@@ -2151,8 +2089,6 @@ export default function AdminPanel({
                           ))}
                         </div>
                       </div>
-
-                      {/* Description */}
                       <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                           Short Listing Description
@@ -2166,7 +2102,6 @@ export default function AdminPanel({
                       </div>
                     </div>
 
-                    {/* Form Buttons with Loading State */}
                     <div className="flex gap-2 justify-end pt-2 border-t border-zinc-200 dark:border-zinc-700 mt-4">
                       <button
                         type="button"
@@ -2201,7 +2136,6 @@ export default function AdminPanel({
                 )}
               </AnimatePresence>
 
-              {/* Property List Table */}
               <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs">
                 <table className="w-full min-w-[650px] border-collapse text-left text-xs bg-white dark:bg-zinc-900">
                   <thead className="bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 uppercase font-bold tracking-wider">
@@ -2291,14 +2225,13 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* TAB 2: HOME SCREEN LAYOUT ENGINE */}
+          {/* ==================== HOME SETTINGS ==================== */}
           {activeAdminTab === "home" && isOwner && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               <form
                 onSubmit={handleUpdateHomeLayout}
                 className="lg:col-span-7 space-y-8 bg-transparent"
               >
-                {/* Hero Configurations */}
                 <div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
                   <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
                     <div className="p-2 bg-red-50 dark:bg-red-950/30 rounded-lg text-red-600 dark:text-red-400">
@@ -2362,7 +2295,6 @@ export default function AdminPanel({
                   </div>
                 </div>
 
-                {/* Contact Details */}
                 <div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
                   <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
                     <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-blue-600">
@@ -2441,7 +2373,6 @@ export default function AdminPanel({
                   </div>
                 </div>
 
-                {/* Social Links */}
                 <div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
                   <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
                     <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg text-emerald-600">
@@ -2526,7 +2457,6 @@ export default function AdminPanel({
                   </div>
                 </div>
 
-                {/* Executive Team Roster */}
                 <div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
                   <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
                     <div className="p-2 bg-violet-50 dark:bg-violet-950/30 rounded-lg text-violet-600">
@@ -2628,7 +2558,6 @@ export default function AdminPanel({
                   </div>
                 </div>
 
-                {/* Contact Button Settings */}
                 <div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
                   <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
                     <div className="p-2 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg text-indigo-600">
@@ -2643,7 +2572,6 @@ export default function AdminPanel({
                       </p>
                     </div>
                   </div>
-
                   <div className="space-y-4">
                     <div>
                       <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
@@ -2660,7 +2588,6 @@ export default function AdminPanel({
                         ]}
                       />
                     </div>
-
                     <div>
                       <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
                         Link URL (for "Open Link" or "Both")
@@ -2676,7 +2603,6 @@ export default function AdminPanel({
                         Can be a download link, WhatsApp number, external page, etc.
                       </p>
                     </div>
-
                     <div>
                       <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
                         Button Label
@@ -2692,19 +2618,28 @@ export default function AdminPanel({
                   </div>
                 </div>
 
-                {/* Submit button bar */}
                 <div className="sticky bottom-4 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-md flex justify-end">
                   <button
                     type="submit"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-red-600 text-white hover:bg-red-700 transition cursor-pointer shadow-lg shadow-red-600/20"
+                    disabled={isSavingHomeSettings}
+                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-white transition cursor-pointer shadow-lg shadow-red-600/20 ${
+                      isSavingHomeSettings ? "bg-red-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
+                    }`}
                   >
-                    <Check className="w-4 h-4" />
-                    Save All Settings
+                    {isSavingHomeSettings ? (
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Saving...
+                      </span>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" /> Save All Settings
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
 
-              {/* Right Column: Live Interactive Device Mockup */}
               <div className="lg:col-span-4 sticky top-6 hidden lg:flex flex-col gap-6">
                 <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg overflow-hidden flex flex-col">
                   <div className="bg-zinc-100 dark:bg-zinc-900 px-4 py-2.5 border-b border-zinc-200 dark:border-zinc-800/80 flex items-center gap-2 flex-shrink-0">
@@ -2793,7 +2728,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* TAB 3: TESTIMONIALS */}
+          {/* ==================== TESTIMONIALS ==================== */}
           {activeAdminTab === "testimonials" && canEditCore && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -2916,18 +2851,15 @@ export default function AdminPanel({
                           </p>
                         </div>
                       </div>
-
                       <div className="flex gap-1 text-black dark:text-zinc-100">
                         {Array.from({ length: t.rating }).map((_, idx) => (
                           <Star key={idx} className="w-3.5 h-3.5 fill-current" />
                         ))}
                       </div>
-
                       <p className="text-xs italic leading-relaxed text-zinc-700 dark:text-zinc-300">
                         "{t.testimony}"
                       </p>
                     </div>
-
                     <div className="flex justify-end pt-3 border-t border-zinc-200 dark:border-zinc-800 mt-3">
                       <button
                         onClick={() => handleDeleteTestimonial(t.id)}
@@ -2943,7 +2875,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* TAB 4: BLOGS */}
+          {/* ==================== BLOGS ==================== */}
           {activeAdminTab === "blogs" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -3084,7 +3016,6 @@ export default function AdminPanel({
                         </p>
                       </div>
                     </div>
-
                     {canEditCore && (
                       <button
                         onClick={() => handleDeleteBlog(b.id)}
@@ -3100,7 +3031,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* TAB 5: PROJECTS */}
+          {/* ==================== PROJECTS ==================== */}
           {activeAdminTab === "projects" && !isSales && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -3138,7 +3069,6 @@ export default function AdminPanel({
                       ? "✏️ Edit Project Showcase"
                       : "🚀 Add New Completed Landmark"}
                   </h4>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 mb-1">
@@ -3153,7 +3083,6 @@ export default function AdminPanel({
                         className="w-full px-3 py-2 text-xs rounded-xl border focus:outline-none transition bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-black dark:text-zinc-100 focus:border-blue-500"
                       />
                     </div>
-
                     <div>
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 mb-1">
                         Completion Year *
@@ -3167,7 +3096,6 @@ export default function AdminPanel({
                         className="w-full px-3 py-2 text-xs rounded-xl border focus:outline-none transition bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-black dark:text-zinc-100 focus:border-blue-500"
                       />
                     </div>
-
                     <div>
                       <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300 mb-1">
                         Location *
@@ -3182,7 +3110,6 @@ export default function AdminPanel({
                         }))}
                       />
                     </div>
-
                     <div>
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 mb-1">
                         Specs Summary *
@@ -3196,7 +3123,6 @@ export default function AdminPanel({
                         className="w-full px-3 py-2 text-xs rounded-xl border focus:outline-none transition bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-black dark:text-zinc-100 focus:border-blue-500"
                       />
                     </div>
-
                     <div className="sm:col-span-2">
                       <ImageInput
                         label="Featured Landmark Image *"
@@ -3204,7 +3130,6 @@ export default function AdminPanel({
                         onChange={setProjImage}
                       />
                     </div>
-
                     <div className="sm:col-span-2">
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 mb-1">
                         Portfolio Description *
@@ -3218,7 +3143,6 @@ export default function AdminPanel({
                         className="w-full px-3 py-2 text-xs rounded-xl border focus:outline-none transition bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-black dark:text-zinc-100 focus:border-blue-500 font-semibold"
                       />
                     </div>
-
                     <div className="sm:col-span-2">
                       <label className="block text-[10px] uppercase font-bold text-zinc-600 dark:text-zinc-400 mb-1">
                         Highlights & Achievements (Comma-separated) *
@@ -3235,7 +3159,6 @@ export default function AdminPanel({
                       />
                     </div>
                   </div>
-
                   <div className="flex gap-2 justify-end pt-2">
                     <button
                       type="button"
@@ -3289,7 +3212,6 @@ export default function AdminPanel({
                         </p>
                       </div>
                     </div>
-
                     {canEditCore && (
                       <div className="flex items-center gap-2.5">
                         <button
@@ -3310,7 +3232,6 @@ export default function AdminPanel({
                     )}
                   </div>
                 ))}
-
                 {projects.length === 0 && (
                   <div className="py-12 text-center text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
                     <p className="text-xs font-bold font-mono">
@@ -3322,7 +3243,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* TAB 6: ADS - WITH FIXED IMAGE UPLOAD */}
+          {/* ==================== ADS ==================== */}
           {activeAdminTab === "ads" && canEditCore && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -3388,7 +3309,6 @@ export default function AdminPanel({
                         ]}
                       />
                     </div>
-
                     <div>
                       <label className="block text-[10px] uppercase font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                         Target Action Link *
@@ -3418,8 +3338,6 @@ export default function AdminPanel({
                         ]}
                       />
                     </div>
-
-                    {/* ✅ FIXED: Image upload with drag-and-drop */}
                     <div className="sm:col-span-2">
                       <ImageInput
                         value={adImg}
@@ -3427,7 +3345,6 @@ export default function AdminPanel({
                         label="Upload Pop-up Image (Click or Drag & Drop)"
                       />
                     </div>
-
                     <div className="sm:col-span-2">
                       <label className="block text-[10px] uppercase font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                         Ad Content Copy *
@@ -3485,7 +3402,6 @@ export default function AdminPanel({
                         </div>
                       </div>
                     </div>
-
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => toggleAdActiveState(ad.id)}
@@ -3510,7 +3426,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* TAB 7: MESSAGES */}
+          {/* ==================== MESSAGES ==================== */}
           {activeAdminTab === "messages" && (
             <div className="space-y-6">
               <div>
@@ -3535,23 +3451,14 @@ export default function AdminPanel({
                       }
                       return null;
                     };
-
                     const timeA = parseIdTime(a.id);
                     const timeB = parseIdTime(b.id);
-
-                    if (timeA !== null && timeB !== null) {
-                      return timeB - timeA;
-                    }
-
+                    if (timeA !== null && timeB !== null) return timeB - timeA;
                     const dateA = new Date(a.date).getTime();
                     const dateB = new Date(b.date).getTime();
-                    if (dateA !== dateB) {
-                      return dateB - dateA;
-                    }
-
+                    if (dateA !== dateB) return dateB - dateA;
                     return b.id.localeCompare(a.id);
                   });
-
                   return sorted.map((m) => {
                     const initials = m.fullName
                       .split(" ")
@@ -3559,7 +3466,6 @@ export default function AdminPanel({
                       .join("")
                       .substring(0, 2)
                       .toUpperCase() || "C";
-
                     return (
                       <div
                         key={m.id}
@@ -3603,7 +3509,6 @@ export default function AdminPanel({
                               </p>
                             </div>
                           </div>
-
                           <div className="flex items-center gap-2 flex-wrap md:self-start">
                             <div className="flex bg-zinc-50 dark:bg-zinc-950/40 p-1 rounded-xl border border-zinc-100 dark:border-zinc-800/60">
                               {["New", "Replied", "Closed"].map((flag) => (
@@ -3631,7 +3536,6 @@ export default function AdminPanel({
                             </button>
                           </div>
                         </div>
-
                         <div className="mt-4 p-4 rounded-xl text-xs leading-relaxed bg-zinc-50 dark:bg-zinc-950/40 text-zinc-800 dark:text-zinc-200 border border-zinc-100/50 dark:border-zinc-800/40">
                           {m.propertyTitle && (
                             <p className="font-bold text-xs text-[#003B95] dark:text-blue-400 mb-1.5 tracking-wide">
@@ -3642,7 +3546,6 @@ export default function AdminPanel({
                             "{m.message}"
                           </p>
                         </div>
-
                         {m.replyText && (
                           <div className="mt-4 pl-4 border-l-2 border-[#003B95]/40 dark:border-blue-500/30">
                             <div className="text-[10px] font-bold text-[#003B95] dark:text-blue-400 uppercase tracking-wider mb-1">
@@ -3653,7 +3556,6 @@ export default function AdminPanel({
                             </div>
                           </div>
                         )}
-
                         {replyingTo === m.id ? (
                           <div className="mt-4 space-y-2">
                             <textarea
@@ -3667,7 +3569,6 @@ export default function AdminPanel({
                               <button
                                 onClick={async () => {
                                   const replyTextToSend = replyMessage;
-
                                   setMessages((prev) =>
                                     prev.map((msg) =>
                                       msg.id === m.id
@@ -3688,7 +3589,6 @@ export default function AdminPanel({
                                     "message",
                                     `Replied to inquiry from ${m.fullName}`
                                   );
-
                                   try {
                                     const response = await fetch(
                                       "/api/send-reply",
@@ -3706,7 +3606,6 @@ export default function AdminPanel({
                                         }),
                                       }
                                     );
-
                                     const data = await response.json();
                                     if (!response.ok) {
                                       console.error("Email send failed:", data);
@@ -3758,7 +3657,6 @@ export default function AdminPanel({
                     );
                   });
                 })()}
-
                 {messages.length === 0 && (
                   <p className="text-center font-mono text-xs text-zinc-700 dark:text-zinc-300 py-12">
                     No corporate inquiries logged in this cycle.
@@ -3768,7 +3666,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* TAB 8: USERS */}
+          {/* ==================== USERS ==================== */}
           {activeAdminTab === "users" && canEditCore && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -3953,7 +3851,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* TAB 9: CATALOGS */}
+          {/* ==================== CATALOGS ==================== */}
           {activeAdminTab === "catalogs" && canEditCore && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-4 border-zinc-200 dark:border-zinc-800">
@@ -3968,7 +3866,7 @@ export default function AdminPanel({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Location catalog board */}
+                {/* Locations */}
                 <div className="bg-white dark:bg-zinc-950 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col h-[480px]">
                   <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 mb-3">
                     <MapPin className="w-4 h-4 text-[#DC2626]" /> Locations
@@ -4050,7 +3948,7 @@ export default function AdminPanel({
                   </div>
                 </div>
 
-                {/* Property Type catalog board */}
+                {/* Property Types */}
                 <div className="bg-white dark:bg-zinc-950 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col h-[480px]">
                   <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 mb-3">
                     <Building2 className="w-4 h-4 text-[#DC2626]" /> Property Types
@@ -4130,7 +4028,7 @@ export default function AdminPanel({
                   </div>
                 </div>
 
-                {/* Amenities catalog board */}
+                {/* Amenities */}
                 <div className="bg-white dark:bg-zinc-950 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col h-[480px]">
                   <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 mb-3">
                     <Star className="w-4 h-4 text-[#DC2626]" /> Executive Services & Infrastructure
