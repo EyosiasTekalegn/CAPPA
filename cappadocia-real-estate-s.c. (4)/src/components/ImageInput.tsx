@@ -20,7 +20,6 @@ interface ImageInputProps {
 
 const DEFAULT_MAX_SIZE_MB = 5;
 
-// Compress image to reduce size (maxWidth/Height 1200, quality 0.8)
 function compressImage(
   dataUrl: string,
   maxWidth = 1200,
@@ -72,10 +71,8 @@ export function ImageInput({
   const [error, setError] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
 
-  // If value is a URL, set preview to it; if base64, use as is.
   const getPreview = useCallback((val: string) => {
     if (!val) return "";
-    // If it's already a data URL or an http URL, use it directly
     if (val.startsWith("data:") || val.startsWith("http")) return val;
     return "";
   }, []);
@@ -88,19 +85,15 @@ export function ImageInput({
       setIsProcessing(true);
 
       try {
-        // For single image
         if (!multiline) {
           const file = files[0];
           if (!file.type.startsWith("image/")) {
             throw new Error("Please select an image file.");
           }
           if (file.size > maxSizeMB * 1024 * 1024) {
-            throw new Error(
-              `Image too large. Maximum ${maxSizeMB}MB.`
-            );
+            throw new Error(`Image too large. Maximum ${maxSizeMB}MB.`);
           }
 
-          // Read file as data URL
           const reader = new FileReader();
           const dataUrl = await new Promise<string>((resolve, reject) => {
             reader.onload = (e) => resolve(e.target?.result as string);
@@ -108,7 +101,6 @@ export function ImageInput({
             reader.readAsDataURL(file);
           });
 
-          // Compress if large
           let finalData = dataUrl;
           if (dataUrl.length > 300000) {
             finalData = await compressImage(dataUrl);
@@ -119,12 +111,9 @@ export function ImageInput({
           return;
         }
 
-        // For multiple images
+        // Multiple images
         const existingUrls = value
-          ? value
-              .split("\n")
-              .map((u) => u.trim())
-              .filter(Boolean)
+          ? value.split("\n").map((u) => u.trim()).filter(Boolean)
           : [];
 
         const newUrls: string[] = [];
@@ -181,10 +170,7 @@ export function ImageInput({
 
   const hasImage = Boolean(value && value.trim());
   const galleryUrls = multiline
-    ? value
-        .split("\n")
-        .map((u) => u.trim())
-        .filter(Boolean)
+    ? value.split("\n").map((u) => u.trim()).filter(Boolean)
     : [];
 
   return (
@@ -202,8 +188,16 @@ export function ImageInput({
 
       <div
         ref={dropRef}
-        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (!disabled && !isProcessing) setIsDragging(true); }}
-        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!disabled && !isProcessing) setIsDragging(true);
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsDragging(false);
+        }}
         onDrop={handleDrop}
         onClick={() => {
           if (!disabled && !isProcessing) inputRef.current?.click();
@@ -214,9 +208,10 @@ export function ImageInput({
           transition-all duration-200
           overflow-hidden
           ${disabled || isProcessing ? "cursor-not-allowed opacity-70" : "cursor-pointer"}
-          ${isDragging
-            ? "border-red-600 bg-red-50 dark:bg-red-950/20"
-            : "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 hover:border-red-500 dark:hover:border-red-500"
+          ${
+            isDragging
+              ? "border-red-600 bg-red-50 dark:bg-red-950/20"
+              : "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 hover:border-red-500 dark:hover:border-red-500"
           }
         `}
       >
@@ -261,14 +256,16 @@ export function ImageInput({
               ))}
               <div className="aspect-video rounded-lg border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 text-zinc-500 hover:text-red-600 hover:border-red-500 transition-colors">
                 <UploadCloud className="w-6 h-6" />
-                <span className="text-[9px] font-bold uppercase tracking-wider text-center px-2">Add More</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-center px-2">
+                  Add More
+                </span>
               </div>
             </div>
             <p className="mt-3 text-[10px] text-zinc-500 dark:text-zinc-400">
               {galleryUrls.length} image{galleryUrls.length !== 1 ? "s" : ""} uploaded. Click here to add more.
             </p>
           </div>
-        ) : !multiline && hasImage && (
+        ) : (!multiline && hasImage) ? (
           <div className="relative w-full min-h-[150px]" onClick={(e) => e.stopPropagation()}>
             <img
               src={getPreview(value) || value}
@@ -312,7 +309,13 @@ export function ImageInput({
               </>
             ) : (
               <>
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${isDragging ? "bg-red-100 dark:bg-red-950/40 text-red-600" : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500"}`}>
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
+                    isDragging
+                      ? "bg-red-100 dark:bg-red-950/40 text-red-600"
+                      : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500"
+                  }`}
+                >
                   {isDragging ? <ImageIcon className="w-6 h-6" /> : <UploadCloud className="w-6 h-6" />}
                 </div>
                 <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
