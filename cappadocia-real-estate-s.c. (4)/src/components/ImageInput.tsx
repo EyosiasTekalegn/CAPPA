@@ -18,13 +18,14 @@ interface ImageInputProps {
   disabled?: boolean;
 }
 
-const DEFAULT_MAX_SIZE_MB = 5;
+const DEFAULT_MAX_SIZE_MB = 10;
 
+// 🔥 HIGHER QUALITY: 800px, quality 0.85
 function compressImage(
   dataUrl: string,
-  maxWidth = 300,    // much smaller
-  maxHeight = 300,   // much smaller
-  quality = 0.5      // lower quality
+  maxWidth = 800,    // increased from 300
+  maxHeight = 800,   // increased from 300
+  quality = 0.85     // increased from 0.5
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -102,22 +103,22 @@ export function ImageInput({
             reader.readAsDataURL(file);
           });
 
-          // Compress aggressively
-          let finalData = await compressImage(dataUrl, 300, 300, 0.5);
+          // Compress with higher quality
+          let finalData = await compressImage(dataUrl, 800, 800, 0.85);
 
-          // If still too large, try even lower quality
-          if (finalData.length / 1024 > 100) {
-            console.warn("Image is still >100KB, trying lower quality...");
-            finalData = await compressImage(dataUrl, 300, 300, 0.3);
+          // If still too large for Firestore (> 900 KB), try quality 0.7
+          if (finalData.length / 1024 > 900) {
+            console.warn("Image >900KB, reducing quality to 0.7...");
+            finalData = await compressImage(dataUrl, 800, 800, 0.7);
           }
 
-          // Log the size for debugging
+          // Final check: if still > 950 KB, reduce dimensions
+          if (finalData.length / 1024 > 950) {
+            console.warn("Image still >950KB, reducing to 600px...");
+            finalData = await compressImage(dataUrl, 600, 600, 0.7);
+          }
+
           console.log(`✅ Image processed: ${(finalData.length / 1024).toFixed(1)} KB`);
-
-          // If still > 200KB, show a warning (but still save)
-          if (finalData.length / 1024 > 200) {
-            setError("Image is larger than recommended (200KB). Please use a smaller image if you have many team members.");
-          }
 
           setPreviewUrl(finalData);
           onChange(finalData);
@@ -141,9 +142,12 @@ export function ImageInput({
             reader.readAsDataURL(file);
           });
 
-          let finalData = await compressImage(dataUrl, 300, 300, 0.5);
-          if (finalData.length / 1024 > 100) {
-            finalData = await compressImage(dataUrl, 300, 300, 0.3);
+          let finalData = await compressImage(dataUrl, 800, 800, 0.85);
+          if (finalData.length / 1024 > 900) {
+            finalData = await compressImage(dataUrl, 800, 800, 0.7);
+          }
+          if (finalData.length / 1024 > 950) {
+            finalData = await compressImage(dataUrl, 600, 600, 0.7);
           }
           newUrls.push(finalData);
         }
