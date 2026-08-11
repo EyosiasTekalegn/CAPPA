@@ -2511,156 +2511,157 @@ useEffect(() => {
                       </p>
                     </div>
                   </div>
-<div className="space-y-6">
-  {localTeam.map((member, index) => (
-    <div
-      key={index}
-      className="p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 space-y-5 relative transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700"
-    >
-      <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800/80 pb-3">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-[#DC2626]">
-          Executive Staff #{index + 1}
-        </span>
-        <button
-          type="button"
-          onClick={() => {
-         const updated = localTeam.filter((_, idx) => idx !== index);
-setLocalTeam(updated);
-          }}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/30 dark:hover:bg-red-950/50 dark:text-red-400 rounded-lg transition-all duration-150 cursor-pointer border border-[#FCA5A5]/20 dark:border-[#991B1B]/20"
-          title="Remove Member"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>Remove Member</span>
-        </button>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
-            Full Name
-          </label>
-          <input
-            type="text"
-            value={member.name}
-            required
-            onChange={(e) => {
-              const updated = [...localTeam];
-              updated[index].name = e.target.value;
-              setLocalTeam(updated);
-            }}
-            className="w-full p-2.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
-          />
-        </div>
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
-            Job Title / Position
-          </label>
-          <input
-            type="text"
-            value={member.role}
-            required
-            onChange={(e) => {
-              const updated = [...localTeam];
-              updated[index].role = e.target.value;
-              setLocalTeam(updated);
-            }}
-            className="w-full p-2.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
-          />
-        </div>
-        <div className="md:col-span-2">
-        <ImageInput
-  value={member.img || ""}
-  onChange={(val) => {
-    setLocalTeam((prev) =>
-      prev.map((teamMember, i) =>
-        i === index
-          ? { ...teamMember, img: val }
-          : teamMember
-      )
-    );
-  }}
-  label="Profile Portrait (Choose Device Image or Drag & Drop)"
-/>
-      </div>
-    </div>
-  ))}
-  <button
-    type="button"
-    onClick={() => {
-      const newMember = {
-        name: "New Executive Staff",
-        role: "Director of Operations",
-        desc: "Brings extensive project management and infrastructure delivery background in municipal sectors.",
-        img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
-      };
-    const updated = [...localTeam, newMember];
-setLocalTeam(updated);
-    }}
-    className="w-full py-2.5 border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-red-700 dark:hover:border-red-500 rounded-xl text-xs font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-400 hover:text-red-700 transition-all flex items-center justify-center gap-2 cursor-pointer bg-transparent"
-  >
-    <span>+ Add New Team Member</span>
-  </button>
-</div>
+                  <div className="space-y-6">
+                    {localTeam.map((member, index) => (
+                      <div
+                        key={index}
+                        className="p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 space-y-5 relative transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700"
+                      >
+                        <div className="flex justify-between items-center border-b border-zinc-200 dark:border-zinc-800/80 pb-3">
+                          <span className="text-[11px] font-bold uppercase tracking-widest text-[#DC2626]">
+                            Executive Staff #{index + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = localTeam.filter((_, idx) => idx !== index);
+                              setLocalTeam(updated);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/30 dark:hover:bg-red-950/50 dark:text-red-400 rounded-lg transition-all duration-150 cursor-pointer border border-[#FCA5A5]/20 dark:border-[#991B1B]/20"
+                            title="Remove Member"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove Member</span>
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
+                              Full Name
+                            </label>
+                            <input
+                              type="text"
+                              value={member.name}
+                              required
+                              onChange={(e) => {
+                                const updated = [...localTeam];
+                                updated[index].name = e.target.value;
+                                setLocalTeam(updated);
+                              }}
+                              className="w-full p-2.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
+                              Job Title / Position
+                            </label>
+                            <input
+                              type="text"
+                              value={member.role}
+                              required
+                              onChange={(e) => {
+                                const updated = [...localTeam];
+                                updated[index].role = e.target.value;
+                                setLocalTeam(updated);
+                              }}
+                              className="w-full p-2.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <ImageInput
+                              value={member.img || ""}
+                              onChange={(val) => {
+                                setLocalTeam((prev) =>
+                                  prev.map((teamMember, i) =>
+                                    i === index
+                                      ? { ...teamMember, img: val }
+                                      : teamMember
+                                  )
+                                );
+                              }}
+                              label="Profile Portrait (Choose Device Image or Drag & Drop)"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newMember = {
+                          name: "New Executive Staff",
+                          role: "Director of Operations",
+                          desc: "Brings extensive project management and infrastructure delivery background in municipal sectors.",
+                          img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                        };
+                        const updated = [...localTeam, newMember];
+                        setLocalTeam(updated);
+                      }}
+                      className="w-full py-2.5 border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-red-700 dark:hover:border-red-500 rounded-xl text-xs font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-400 hover:text-red-700 transition-all flex items-center justify-center gap-2 cursor-pointer bg-transparent"
+                    >
+                      <span>+ Add New Team Member</span>
+                    </button>
+                  </div>
 
-                <div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
-                  <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
-                    <div className="p-2 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg text-indigo-600">
-                      <Settings className="w-5 h-5" />
+                  <div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
+                    <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
+                      <div className="p-2 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg text-indigo-600">
+                        <Settings className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold font-serif text-lg text-zinc-900 dark:text-zinc-100">
+                          Property Detail Button Action
+                        </h3>
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                          Configure the action and label of the main call‑to‑action button on each property detail page.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold font-serif text-lg text-zinc-900 dark:text-zinc-100">
-                        Property Detail Button Action
-                      </h3>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Configure the action and label of the main call‑to‑action button on each property detail page.
-                      </p>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
+                          Button Action
+                        </label>
+                        <AdminCustomSelect
+                          value={btnAction}
+                          onChange={(val) => setBtnAction(val as ContactButtonSettings['action'])}
+                          placeholder="Select Action"
+                          options={[
+                            { value: 'send_message', label: 'Send Message Only' },
+                            { value: 'open_link', label: 'Open Link Only' },
+                            { value: 'both', label: 'Both (Send & Open Link)' },
+                          ]}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
+                          Link URL (for "Open Link" or "Both")
+                        </label>
+                        <input
+                          type="text"
+                          value={btnLinkUrl}
+                          onChange={(e) => setBtnLinkUrl(e.target.value)}
+                          placeholder="e.g. https://wa.me/251911234567"
+                          className="w-full p-3 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 outline-none transition-all duration-200"
+                        />
+                        <p className="text-[9px] text-zinc-500 dark:text-zinc-400 mt-1">
+                          Can be a download link, WhatsApp number, external page, etc.
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
+                          Button Label
+                        </label>
+                        <input
+                          type="text"
+                          value={btnLinkLabel}
+                          onChange={(e) => setBtnLinkLabel(e.target.value)}
+                          placeholder="e.g. Request Callback"
+                          className="w-full p-3 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 outline-none transition-all duration-200"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
-                        Button Action
-                      </label>
-                      <AdminCustomSelect
-                        value={btnAction}
-                        onChange={(val) => setBtnAction(val as ContactButtonSettings['action'])}
-                        placeholder="Select Action"
-                        options={[
-                          { value: 'send_message', label: 'Send Message Only' },
-                          { value: 'open_link', label: 'Open Link Only' },
-                          { value: 'both', label: 'Both (Send & Open Link)' },
-                        ]}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
-                        Link URL (for "Open Link" or "Both")
-                      </label>
-                      <input
-                        type="text"
-                        value={btnLinkUrl}
-                        onChange={(e) => setBtnLinkUrl(e.target.value)}
-                        placeholder="e.g. https://wa.me/251911234567"
-                        className="w-full p-3 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 outline-none transition-all duration-200"
-                      />
-                      <p className="text-[9px] text-zinc-500 dark:text-zinc-400 mt-1">
-                        Can be a download link, WhatsApp number, external page, etc.
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 mb-1">
-                        Button Label
-                      </label>
-                      <input
-                        type="text"
-                        value={btnLinkLabel}
-                        onChange={(e) => setBtnLinkLabel(e.target.value)}
-                        placeholder="e.g. Request Callback"
-                        className="w-full p-3 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-600 outline-none transition-all duration-200"
-                      />
-                    </div>
-                  </div>
-                </div>
                 </div>
 
                 <div className="sticky bottom-4 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-md flex justify-end">
