@@ -22,9 +22,9 @@ const DEFAULT_MAX_SIZE_MB = 5;
 
 function compressImage(
   dataUrl: string,
-  maxWidth = 600,
-  maxHeight = 600,
-  quality = 0.6
+  maxWidth = 300,    // much smaller
+  maxHeight = 300,   // much smaller
+  quality = 0.5      // lower quality
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -85,7 +85,7 @@ export function ImageInput({
       setIsProcessing(true);
 
       try {
-        // Single image mode
+        // Single image mode (used for team members)
         if (!multiline) {
           const file = files[0];
           if (!file.type.startsWith("image/")) {
@@ -102,11 +102,21 @@ export function ImageInput({
             reader.readAsDataURL(file);
           });
 
-          // Compress to keep size small
-          let finalData = await compressImage(dataUrl, 600, 600, 0.6);
+          // Compress aggressively
+          let finalData = await compressImage(dataUrl, 300, 300, 0.5);
+
           // If still too large, try even lower quality
-          if (finalData.length / 1024 > 400) {
-            finalData = await compressImage(dataUrl, 600, 600, 0.4);
+          if (finalData.length / 1024 > 100) {
+            console.warn("Image is still >100KB, trying lower quality...");
+            finalData = await compressImage(dataUrl, 300, 300, 0.3);
+          }
+
+          // Log the size for debugging
+          console.log(`✅ Image processed: ${(finalData.length / 1024).toFixed(1)} KB`);
+
+          // If still > 200KB, show a warning (but still save)
+          if (finalData.length / 1024 > 200) {
+            setError("Image is larger than recommended (200KB). Please use a smaller image if you have many team members.");
           }
 
           setPreviewUrl(finalData);
@@ -131,9 +141,9 @@ export function ImageInput({
             reader.readAsDataURL(file);
           });
 
-          let finalData = await compressImage(dataUrl, 600, 600, 0.6);
-          if (finalData.length / 1024 > 400) {
-            finalData = await compressImage(dataUrl, 600, 600, 0.4);
+          let finalData = await compressImage(dataUrl, 300, 300, 0.5);
+          if (finalData.length / 1024 > 100) {
+            finalData = await compressImage(dataUrl, 300, 300, 0.3);
           }
           newUrls.push(finalData);
         }
