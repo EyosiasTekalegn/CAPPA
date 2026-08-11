@@ -2624,6 +2624,7 @@ export default function AdminPanel({
                     </div>
                   </div>
                 </div>
+                </div>
 
                 <div className="sticky bottom-4 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-md flex justify-end">
                   <button
