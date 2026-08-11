@@ -22,9 +22,9 @@ const DEFAULT_MAX_SIZE_MB = 5;
 
 function compressImage(
   dataUrl: string,
-  maxWidth = 1200,
-  maxHeight = 1200,
-  quality = 0.8
+  maxWidth = 600,
+  maxHeight = 600,
+  quality = 0.6
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -85,6 +85,7 @@ export function ImageInput({
       setIsProcessing(true);
 
       try {
+        // Single image mode
         if (!multiline) {
           const file = files[0];
           if (!file.type.startsWith("image/")) {
@@ -101,9 +102,11 @@ export function ImageInput({
             reader.readAsDataURL(file);
           });
 
-          let finalData = dataUrl;
-          if (dataUrl.length > 300000) {
-            finalData = await compressImage(dataUrl);
+          // Compress to keep size small
+          let finalData = await compressImage(dataUrl, 600, 600, 0.6);
+          // If still too large, try even lower quality
+          if (finalData.length / 1024 > 400) {
+            finalData = await compressImage(dataUrl, 600, 600, 0.4);
           }
 
           setPreviewUrl(finalData);
@@ -111,7 +114,7 @@ export function ImageInput({
           return;
         }
 
-        // Multiple images
+        // Multiple images (gallery)
         const existingUrls = value
           ? value.split("\n").map((u) => u.trim()).filter(Boolean)
           : [];
@@ -128,9 +131,9 @@ export function ImageInput({
             reader.readAsDataURL(file);
           });
 
-          let finalData = dataUrl;
-          if (dataUrl.length > 300000) {
-            finalData = await compressImage(dataUrl);
+          let finalData = await compressImage(dataUrl, 600, 600, 0.6);
+          if (finalData.length / 1024 > 400) {
+            finalData = await compressImage(dataUrl, 600, 600, 0.4);
           }
           newUrls.push(finalData);
         }
