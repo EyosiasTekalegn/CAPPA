@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from "firebase/storage";
 
 // Hardcoded Firebase configuration for cappadocia-realestate
 const firebaseConfig = {
@@ -17,6 +18,7 @@ console.log('🔥 Firebase using project:', firebaseConfig.projectId);
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app); // Uses default database
 export const auth = getAuth(app);
+export const storage = getStorage(app);
 
 export enum OperationType {
   CREATE = 'create',
