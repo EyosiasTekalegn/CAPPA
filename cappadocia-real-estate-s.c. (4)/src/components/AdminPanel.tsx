@@ -493,11 +493,9 @@ export default function AdminPanel({
     }
   }, [contactInfo]);
 
-  useEffect(() => {
-    if (teamMembers) {
-      setLocalTeam(teamMembers || []);
-    }
-  }, [teamMembers]);
+useEffect(() => {
+  setLocalTeam(teamMembers || []);
+}, [teamMembers]);
 
   useEffect(() => {
     setBtnAction(contactButtonSettings.action);
@@ -2526,9 +2524,8 @@ export default function AdminPanel({
         <button
           type="button"
           onClick={() => {
-            const updated = localTeam.filter((_, idx) => idx !== index);
-            setLocalTeam(updated);
-            if (setTeamMembers) setTeamMembers(updated);
+         const updated = localTeam.filter((_, idx) => idx !== index);
+setLocalTeam(updated);
           }}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/30 dark:hover:bg-red-950/50 dark:text-red-400 rounded-lg transition-all duration-150 cursor-pointer border border-[#FCA5A5]/20 dark:border-[#991B1B]/20"
           title="Remove Member"
@@ -2571,20 +2568,19 @@ export default function AdminPanel({
           />
         </div>
         <div className="md:col-span-2">
-          <ImageInput
-            value={member.img || ""}
-            onChange={(val) => {
-              const updated = [...localTeam];
-              updated[index].img = val;
-              setLocalTeam(updated);
-              // ✅ Immediately sync to parent so Firestore gets updated
-              if (setTeamMembers) {
-                setTeamMembers(updated);
-              }
-            }}
-            label="Profile Portrait (Choose Device Image or Drag & Drop)"
-          />
-        </div>
+        <ImageInput
+  value={member.img || ""}
+  onChange={(val) => {
+    setLocalTeam((prev) =>
+      prev.map((teamMember, i) =>
+        i === index
+          ? { ...teamMember, img: val }
+          : teamMember
+      )
+    );
+  }}
+  label="Profile Portrait (Choose Device Image or Drag & Drop)"
+/>
       </div>
     </div>
   ))}
@@ -2597,9 +2593,8 @@ export default function AdminPanel({
         desc: "Brings extensive project management and infrastructure delivery background in municipal sectors.",
         img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
       };
-      const updated = [...localTeam, newMember];
-      setLocalTeam(updated);
-      if (setTeamMembers) setTeamMembers(updated);
+    const updated = [...localTeam, newMember];
+setLocalTeam(updated);
     }}
     className="w-full py-2.5 border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-red-700 dark:hover:border-red-500 rounded-xl text-xs font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-400 hover:text-red-700 transition-all flex items-center justify-center gap-2 cursor-pointer bg-transparent"
   >
