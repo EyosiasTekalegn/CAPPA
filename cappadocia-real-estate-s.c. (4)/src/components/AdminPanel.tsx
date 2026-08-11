@@ -2506,35 +2506,37 @@ export default function AdminPanel({
                           <span className="text-[11px] font-bold uppercase tracking-widest text-[#DC2626]">
                             Executive Staff #{index + 1}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const updated = localTeam.filter((_, idx) => idx !== index);
-                              setLocalTeam(updated);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/30 dark:hover:bg-red-950/50 dark:text-red-400 rounded-lg transition-all duration-150 cursor-pointer border border-[#FCA5A5]/20 dark:border-[#991B1B]/20"
-                            title="Remove Member"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Remove Member</span>
-                          </button>
+                         <button
+  type="button"
+  onClick={() => {
+    const updated = localTeam.filter((_, idx) => idx !== index);
+    setLocalTeam(updated);
+    if (setTeamMembers) setTeamMembers(updated);
+  }}
+  className="..."
+  title="Remove Member"
+>
+  <Trash2 className="w-3.5 h-3.5" />
+  <span>Remove Member</span>
+</button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
                               Full Name
                             </label>
-                            <input
-                              type="text"
-                              value={member.name}
-                              required
-                              onChange={(e) => {
-                                const updated = [...localTeam];
-                                updated[index].name = e.target.value;
-                                setLocalTeam(updated);
-                              }}
-                              className="w-full p-2.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
-                            />
+                        <input
+  type="text"
+  value={member.name}
+  required
+  onChange={(e) => {
+    const updated = [...localTeam];
+    updated[index].name = e.target.value;
+    setLocalTeam(updated);
+    if (setTeamMembers) setTeamMembers(updated);
+  }}
+  className="..."
+/>
                           </div>
                           <div>
                             <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
@@ -2553,39 +2555,40 @@ export default function AdminPanel({
                             />
                           </div>
                           <div className="md:col-span-2">
-                            <ImageInput
-                              value={member.img || ""}
-                              onChange={(val) => {
-                                setLocalTeam((prev) =>
-                                  prev.map((teamMember, i) =>
-                                    i === index
-                                      ? { ...teamMember, img: val }
-                                      : teamMember
-                                  )
-                                );
-                              }}
-                              label="Profile Portrait (Choose Device Image or Drag & Drop)"
-                            />
+                         <ImageInput
+  value={member.img || ""}
+  onChange={(val) => {
+    const updated = localTeam.map((teamMember, i) =>
+      i === index
+        ? { ...teamMember, img: val }
+        : teamMember
+    );
+    setLocalTeam(updated);
+    if (setTeamMembers) setTeamMembers(updated);
+  }}
+  label="Profile Portrait (Choose Device Image or Drag & Drop)"
+/>
                           </div>
                         </div>
                       </div>
                     ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newMember = {
-                          name: "New Executive Staff",
-                          role: "Director of Operations",
-                          desc: "Brings extensive project management and infrastructure delivery background in municipal sectors.",
-                          img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
-                        };
-                        const updated = [...localTeam, newMember];
-                        setLocalTeam(updated);
-                      }}
-                      className="w-full py-2.5 border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-red-700 dark:hover:border-red-500 rounded-xl text-xs font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-400 hover:text-red-700 transition-all flex items-center justify-center gap-2 cursor-pointer bg-transparent"
-                    >
-                      <span>+ Add New Team Member</span>
-                    </button>
+                  <button
+  type="button"
+  onClick={() => {
+    const newMember = {
+      name: "New Executive Staff",
+      role: "Director of Operations",
+      desc: "Brings extensive project management and infrastructure delivery background in municipal sectors.",
+      img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+    };
+    const updated = [...localTeam, newMember];
+    setLocalTeam(updated);
+    if (setTeamMembers) setTeamMembers(updated);
+  }}
+  className="..."
+>
+  <span>+ Add New Team Member</span>
+</button>
                   </div>
 
                   <div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
