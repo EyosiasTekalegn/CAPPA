@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot, setDoc, deleteDoc, getDocFromServer } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, getDocFromServer, writeBatch, getDocs } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from './firebase';
 import { 
   MapPin, 
@@ -104,47 +104,68 @@ export default function App() {
     })
   );
 
-  const [teamMembers, setTeamMembers] = useState(() => 
-    safelyParseJSON('cap_team_members', [
-      {
-        name: 'Eleni Gebre',
-        role: 'Managing Director',
-        desc: 'Guides our corporate vision, diaspora partnerships, and corporate development goals.',
-        img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80'
-      },
-      {
-        name: 'Yohannes Tekle',
-        role: 'Chief Architect',
-        desc: 'Designs beautiful, comfortable, and modern living spaces tailored to metropolitan families.',
-        img: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80'
-      },
-      {
-        name: 'Martha Kassa',
-        role: 'Client Success Desk',
-        desc: 'Guarantees transparent and smooth escrow, title deeds, and communication for overseas buyers.',
-        img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80'
-      },
-      {
-        name: 'Dawit Assefa',
-        role: 'Lead Structural Engineer',
-        desc: 'Oversees safety compliance, aggregate testing, and structurally sound tower execution.',
-        img: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80'
-      }
-    ])
+  // ------------------------------------------------------------------
+  // TEAM MEMBERS – now stored in a separate collection
+  // ------------------------------------------------------------------
+  const [teamMembers, setTeamMembers] = useState<any[]>(() => 
+    safelyParseJSON('cap_team_members', [])
   );
 
-  const contact = {
-    ...{
-      phone: '+251 911 234567',
-      email: 'info@cappadocia.com',
-      address: 'Bole Road, Behind Atlas Hotel, Addis Ababa, Ethiopia',
-      hqAddress: 'Cappadocia Towers, Bole, Block 12, VIP Lane,\nAddis Ababa, Ethiopia',
-      hotline: '+251 911 385500 (Addis HQ)',
-      diasporaHotline: '+1 (800) 490-CAP (Diaspora Hotline)'
-    },
-    ...contactInfo
+  // Load team members from Firestore on mount (and listen for changes)
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'teamMembers'), (snapshot) => {
+      const members: any[] = [];
+      snapshot.forEach((docSnap) => {
+        members.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setTeamMembers(members);
+    }, (error) => {
+      console.error('Error loading team members:', error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Sync team members to Firestore (each as a separate document)
+  const syncTeamMembers = async (members: any[]) => {
+    try {
+      const batch = writeBatch(db);
+      // Get current document IDs to handle deletions
+      const currentIds = members.map(m => m.id).filter(Boolean);
+      // We'll also need to know existing IDs to delete removed ones
+      const snapshot = await getDocs(collection(db, 'teamMembers'));
+      const existingIds = snapshot.docs.map(doc => doc.id);
+
+      // Add/update each member
+      for (const member of members) {
+        const docId = member.id || `tm-${Date.now()}`;
+        const docRef = doc(db, 'teamMembers', docId);
+        batch.set(docRef, { ...member, id: docId });
+      }
+
+      // Delete removed members
+      for (const id of existingIds) {
+        if (!currentIds.includes(id)) {
+          batch.delete(doc(db, 'teamMembers', id));
+        }
+      }
+
+      await batch.commit();
+      console.log('✅ Team members synced to Firestore');
+    } catch (error) {
+      console.error('❌ Error saving team members:', error);
+    }
   };
 
+  // Custom setTeamMembers that updates local state and syncs to Firestore
+  const handleSetTeamMembers = (action: React.SetStateAction<any[]>) => {
+    const next = typeof action === 'function' ? action(teamMembers) : action;
+    setTeamMembers(next);
+    syncTeamMembers(next);
+  };
+
+  // ------------------------------------------------------------------
+  // Other states
+  // ------------------------------------------------------------------
   const [testimonialsState, setTestimonialsState] = useState<Testimonial[]>(() => 
     safelyParseJSON<Testimonial[]>('cap_testimonials', TESTIMONIALS)
   );
@@ -383,7 +404,7 @@ export default function App() {
         if (data.homeSettings) setHomeSettingsState(data.homeSettings);
         if (data.contactInfo) setContactInfo(data.contactInfo);
         if (data.globalSocials) setGlobalSocials(data.globalSocials);
-        if (data.teamMembers) setTeamMembers(data.teamMembers);
+        // REMOVED: teamMembers – now loaded from separate collection
         if (data.allLocations) setAllLocations(data.allLocations);
         if (data.allTypes) setAllTypes(data.allTypes);
         if (data.allAmenities) setAllAmenities(data.allAmenities);
@@ -405,6 +426,9 @@ export default function App() {
     };
   }, []);
 
+  // ------------------------------------------------------------------
+  // Other App hooks and handlers (unchanged from original)
+  // ------------------------------------------------------------------
   const [activeTab, setActiveTab] = useState<'home' | 'properties' | 'projects' | 'favorites' | 'about' | 'blog' | 'contact' | 'admin'>('home');
   const [loggedInUser, setLoggedInUser] = useState<AdminUser | null>(null);
   const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
@@ -647,6 +671,7 @@ export default function App() {
     });
   };
 
+  // Local storage syncs for all states (unchanged)
   useEffect(() => {
     localStorage.setItem('cap_activity_logs', JSON.stringify(activityLogs));
   }, [activityLogs]);
@@ -675,6 +700,7 @@ export default function App() {
     localStorage.setItem('cap_users', JSON.stringify(users));
   }, [users]);
 
+  // Auto-logout timer (unchanged)
   useEffect(() => {
     if (!loggedInUser) return;
 
@@ -707,6 +733,7 @@ export default function App() {
     };
   }, [loggedInUser]);
 
+  // Local storage syncs for other states (unchanged)
   useEffect(() => {
     localStorage.setItem('cap_projects', JSON.stringify(projects));
   }, [projects]);
@@ -758,6 +785,10 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // Remove teamMembers from localStorage since we now use Firestore, but keep for fallback
+  // We'll still save to localStorage for offline support but the main source is Firestore.
+  // Actually, we'll keep it for fast loading but Firestore will overwrite.
 
   useEffect(() => {
     localStorage.setItem('cap_team_members', JSON.stringify(teamMembers));
@@ -857,7 +888,7 @@ export default function App() {
     );
   };
 
-  // Updated filter logic using price range
+  // Filtered properties logic (unchanged)
   const filteredProperties = properties.filter((p) => {
     const locMatch = searchLocation === '' || p.subCity.toLowerCase() === searchLocation.toLowerCase();
     const typeMatch = searchType === '' || p.type.toLowerCase() === searchType.toLowerCase();
@@ -924,6 +955,9 @@ export default function App() {
     );
   };
 
+  // ------------------------------------------------------------------
+  // RENDER – this remains unchanged except for passing teamMembers props
+  // ------------------------------------------------------------------
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-300 ${isDarkMode ? "dark bg-zinc-950 text-zinc-50" : "bg-zinc-50 text-zinc-900"}`} id="application-root">
 
@@ -1192,7 +1226,7 @@ export default function App() {
 
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-8">
                       <div className="lg:col-span-8 text-left space-y-6">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-red-600 text-white dark:text-white font-mono text-[10px] tracking-widest uppercase font-black font-semibold">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-red-600 text-white dark:text-zinc-100 font-mono text-[10px] tracking-widest uppercase font-black font-semibold">
                           <Sparkles className="w-3.5 h-3.5" />
                           Premium Quality S.C. Certificate
                         </div>
@@ -1386,7 +1420,7 @@ export default function App() {
                             </AnimatePresence>
                           </div>
 
-                          {/* PRICE DROPDOWN (matching Location/Type/Beds) */}
+                          {/* PRICE DROPDOWN */}
                           <div className="space-y-1 relative">
                             <label className="block text-[9px] uppercase font-bold text-zinc-600 dark:text-zinc-400 tracking-widest">
                               Price
@@ -1613,7 +1647,6 @@ export default function App() {
                     </div>
                   </section>
 
-                  {/* UPDATED TESTIMONIALS: no italic, larger, font-serif */}
                   <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 animate-fade-in" id="homepage-buyer-feedback">
                     <div className="text-center max-w-2xl mx-auto space-y-2">
                       <span className="text-xs uppercase font-extrabold text-[#DC2626] font-mono tracking-widest block">
@@ -1648,7 +1681,6 @@ export default function App() {
                                 <Star key={idy} className="w-4 h-4 fill-current text-amber-500" />
                               ))}
                             </div>
-                            {/* Larger, no italic, font-serif (Playfair Display) */}
                             <p className="text-base md:text-lg leading-relaxed text-zinc-800 dark:text-zinc-200 font-serif font-medium tracking-wide">
                               "{t.testimony}"
                             </p>
@@ -2647,7 +2679,7 @@ export default function App() {
                     contactInfo={contact}
                     setContactInfo={(action) => setContactInfo((prev: any) => { const next = typeof action === 'function' ? action(prev) : action; syncSettingsToFirestore('contactInfo', next); return next; })}
                     teamMembers={teamMembers}
-                    setTeamMembers={(action) => setTeamMembers((prev: any) => { const next = typeof action === 'function' ? action(prev) : action; syncSettingsToFirestore('teamMembers', next); return next; })}
+                    setTeamMembers={handleSetTeamMembers}
                     popupAds={popupAds}
                     setPopupAds={setPopupAds}
                     messages={messages}
