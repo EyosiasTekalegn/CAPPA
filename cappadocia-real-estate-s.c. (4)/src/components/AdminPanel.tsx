@@ -915,68 +915,110 @@ export default function AdminPanel({
   // HOME SETTINGS HANDLERS
   // ============================================================
   const handleUpdateHomeLayout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isOwner) {
-      showAlert("Permission Denied", "Only the Owner can edit home settings.");
-      return;
+  e.preventDefault();
+
+  if (!isOwner) {
+    showAlert(
+      "Permission Denied",
+      "Only the Owner can edit home settings."
+    );
+    return;
+  }
+
+  setIsSavingHomeSettings(true);
+
+  try {
+    // ------------------------------------------------------------
+    // HOME SETTINGS
+    // ------------------------------------------------------------
+    setHomeSettings({
+      heroTitle: homeH1,
+      heroSubtitle: homeSub,
+      heroImage: homeImgUrl,
+      brandLogo: brandLogo,
+      brandFavicon: brandFavicon,
+    });
+
+    // ------------------------------------------------------------
+    // SOCIAL SETTINGS
+    // ------------------------------------------------------------
+    if (setGlobalSocials) {
+      setGlobalSocials({
+        twitter: socTwitter,
+        linkedin: socLinkedin,
+        telegram: socTelegram,
+        tiktok: socTiktok,
+        whatsapp: socWhatsapp,
+        facebook: socFacebook,
+        instagram: socInstagram,
+      });
     }
 
-    setIsSavingHomeSettings(true);
-
-    try {
-      setHomeSettings({
-        heroTitle: homeH1,
-        heroSubtitle: homeSub,
-        heroImage: homeImgUrl,
-        brandLogo: brandLogo,
-        brandFavicon: brandFavicon,
+    // ------------------------------------------------------------
+    // CONTACT SETTINGS
+    // ------------------------------------------------------------
+    if (setContactInfo) {
+      setContactInfo({
+        email: contactEmail,
+        phone: contactPhone,
+        address: contactAddress,
+        hqAddress: contactHqAddress,
+        hotline: contactHotline,
+        diasporaHotline: contactDiasporaHotline,
       });
-
-      if (setGlobalSocials) {
-        setGlobalSocials({
-          twitter: socTwitter,
-          linkedin: socLinkedin,
-          telegram: socTelegram,
-          tiktok: socTiktok,
-          whatsapp: socWhatsapp,
-          facebook: socFacebook,
-          instagram: socInstagram,
-        });
-      }
-
-      if (setContactInfo) {
-        setContactInfo({
-          email: contactEmail,
-          phone: contactPhone,
-          address: contactAddress,
-          hqAddress: contactHqAddress,
-          hotline: contactHotline,
-          diasporaHotline: contactDiasporaHotline,
-        });
-      }
-
-      if (setTeamMembers) {
-        setTeamMembers(localTeam);
-      }
-
-      setContactButtonSettings({
-        action: btnAction,
-        linkUrl: btnLinkUrl,
-        linkLabel: btnLinkLabel,
-      });
-
-      logActivity("system", "✅ Home settings updated by admin");
-      showAlert(
-        "✅ Settings Saved",
-        "All home screen, contact, and button settings have been updated!"
-      );
-    } catch (error: any) {
-      console.error("Error saving home settings:", error);
-      showAlert("❌ Error", `Failed to save settings: ${error.message || "Please try again."}`);
-    } finally {
-      setIsSavingHomeSettings(false);
     }
-  };
+
+    // ------------------------------------------------------------
+    // TEAM MEMBERS
+    //
+    // IMPORTANT:
+    // Save the complete roster INCLUDING img URLs.
+    // ------------------------------------------------------------
+    const cleanedTeam = (localTeam || []).map((member) => ({
+      name: member?.name || "",
+      role: member?.role || "",
+      desc: member?.desc || "",
+      img: member?.img || "",
+    }));
+
+    if (setTeamMembers) {
+      setTeamMembers(cleanedTeam);
+    }
+
+    // ------------------------------------------------------------
+    // CONTACT BUTTON
+    // ------------------------------------------------------------
+    setContactButtonSettings({
+      action: btnAction,
+      linkUrl: btnLinkUrl,
+      linkLabel: btnLinkLabel,
+    });
+
+    // ------------------------------------------------------------
+    // ACTIVITY LOG
+    // ------------------------------------------------------------
+    logActivity(
+      "system",
+      "✅ Home settings and executive team roster updated by admin"
+    );
+
+    showAlert(
+      "✅ Settings Saved",
+      "All home screen, contact, button, and executive roster settings have been updated!"
+    );
+  } catch (error: any) {
+    console.error("Error saving home settings:", error);
+
+    showAlert(
+      "❌ Error",
+      `Failed to save settings: ${
+        error?.message || "Please try again."
+      }`
+    );
+  } finally {
+    setIsSavingHomeSettings(false);
+  }
+};
 
   // ============================================================
   // USER MANAGEMENT
