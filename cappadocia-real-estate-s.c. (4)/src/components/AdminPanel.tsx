@@ -493,9 +493,6 @@ export default function AdminPanel({
     }
   }, [contactInfo]);
 
-useEffect(() => {
-  setLocalTeam(teamMembers || []);
-}, [teamMembers]);
 
   useEffect(() => {
     setBtnAction(contactButtonSettings.action);
@@ -972,12 +969,13 @@ useEffect(() => {
     // IMPORTANT:
     // Save the complete roster INCLUDING img URLs.
     // ------------------------------------------------------------
-    const cleanedTeam = (localTeam || []).map((member) => ({
-      name: member?.name || "",
-      role: member?.role || "",
-      desc: member?.desc || "",
-      img: member?.img || "",
-    }));
+   const cleanedTeam = (localTeam || []).map((member) => ({
+  id: member?.id || undefined,      // ← keep the id!
+  name: member?.name || "",
+  role: member?.role || "",
+  desc: member?.desc || "",
+  img: member?.img || "",
+}));
 
     if (setTeamMembers) {
       setTeamMembers(cleanedTeam);
