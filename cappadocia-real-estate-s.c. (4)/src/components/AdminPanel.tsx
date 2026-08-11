@@ -10,15 +10,12 @@ import {
   Trash2,
   Edit3,
   Check,
-  AlertTriangle,
   Shield,
   X,
   FileText,
-  UserCheck,
   Megaphone,
   Home,
   Star,
-  Download,
 } from "lucide-react";
 import {
   PieChart,
@@ -42,7 +39,6 @@ import {
 } from "../types";
 import {
   Briefcase,
-  UploadCloud,
   ChevronDown,
   Tags,
   MapPin,
@@ -273,7 +269,9 @@ export default function AdminPanel({
   restoreOriginalWebsiteContent,
   isRestoring = false,
 }: AdminPanelProps) {
-  // Current logged-in role
+  // ==================================================================
+  // ROLE-BASED ACCESS
+  // ==================================================================
   const currentRole = loggedInUser?.role || "Sales";
   const canEditCore = currentRole === "Owner" || currentRole === "Manager";
   const isOwner = currentRole === "Owner";
@@ -292,9 +290,19 @@ export default function AdminPanel({
     | "catalogs"
   >("dashboard");
 
-  // ============================================================
+  // ==================================================================
+  // TEAM MEMBERS – LOCAL STATE (only synced to parent on Save)
+  // ==================================================================
+  const [localTeam, setLocalTeam] = useState<any[]>(teamMembers || []);
+
+  // Initialize localTeam from parent when component mounts
+  useEffect(() => {
+    setLocalTeam(teamMembers || []);
+  }, [teamMembers]);
+
+  // ==================================================================
   // PROPERTY FORM STATE
-  // ============================================================
+  // ==================================================================
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -336,9 +344,9 @@ export default function AdminPanel({
     "A newly updated estate built with top premium standards."
   );
 
-  // ============================================================
+  // ==================================================================
   // BLOG FORM STATE
-  // ============================================================
+  // ==================================================================
   const [isAddingBlog, setIsAddingBlog] = useState(false);
   const [blogTitle, setBlogTitle] = useState("");
   const [blogExcerpt, setBlogExcerpt] = useState("");
@@ -349,9 +357,9 @@ export default function AdminPanel({
     "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80"
   );
 
-  // ============================================================
+  // ==================================================================
   // TESTIMONIAL FORM STATE
-  // ============================================================
+  // ==================================================================
   const [isAddingTestimonial, setIsAddingTestimonial] = useState(false);
   const [testClient, setTestClient] = useState("");
   const [testRating, setTestRating] = useState(5);
@@ -359,9 +367,9 @@ export default function AdminPanel({
   const [testPurchased, setTestPurchased] = useState("Executive Suite CMC");
   const [testImage, setTestImage] = useState("");
 
-  // ============================================================
+  // ==================================================================
   // ADS FORM STATE
-  // ============================================================
+  // ==================================================================
   const [isAddingAd, setIsAddingAd] = useState(false);
   const [adTitle, setAdTitle] = useState("");
   const [adContent, setAdContent] = useState("");
@@ -372,9 +380,9 @@ export default function AdminPanel({
   const [adCtaLink, setAdCtaLink] = useState("properties");
   const [adFreq, setAdFreq] = useState<"always" | "once">("always");
 
-  // ============================================================
+  // ==================================================================
   // USERS FORM STATE
-  // ============================================================
+  // ==================================================================
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [userFullName, setUserFullName] = useState("");
@@ -385,15 +393,15 @@ export default function AdminPanel({
     "Sales"
   );
 
-  // ============================================================
+  // ==================================================================
   // MESSAGES STATE
-  // ============================================================
+  // ==================================================================
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
 
-  // ============================================================
+  // ==================================================================
   // PROJECTS FORM STATE
-  // ============================================================
+  // ==================================================================
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [projYear, setProjYear] = useState("");
@@ -408,9 +416,9 @@ export default function AdminPanel({
     "14 Units / Multi-Bedroom Duplexes"
   );
 
-  // ============================================================
+  // ==================================================================
   // HOME SCREEN SETTINGS
-  // ============================================================
+  // ==================================================================
   const [homeH1, setHomeH1] = useState(homeSettings.heroTitle);
   const [homeSub, setHomeSub] = useState(homeSettings.heroSubtitle);
   const [homeImgUrl, setHomeImgUrl] = useState(homeSettings.heroImage);
@@ -449,17 +457,14 @@ export default function AdminPanel({
   const [contactHotline, setContactHotline] = useState(contactInfo?.hotline || "+251 911 385500 (Addis HQ)");
   const [contactDiasporaHotline, setContactDiasporaHotline] = useState(contactInfo?.diasporaHotline || "+1 (800) 490-CAP (Diaspora Hotline)");
 
-  // Team Members
-  const [localTeam, setLocalTeam] = useState<any[]>(teamMembers || []);
-
   // Contact Button Settings
   const [btnAction, setBtnAction] = useState<ContactButtonSettings['action']>(contactButtonSettings.action);
   const [btnLinkUrl, setBtnLinkUrl] = useState(contactButtonSettings.linkUrl);
   const [btnLinkLabel, setBtnLinkLabel] = useState(contactButtonSettings.linkLabel);
 
-  // ============================================================
-  // SYNC EFFECTS
-  // ============================================================
+  // ==================================================================
+  // SYNC EFFECTS (for UI state, NOT teamMembers sync)
+  // ==================================================================
   useEffect(() => {
     if (homeSettings) {
       setHomeH1(homeSettings.heroTitle || "");
@@ -493,30 +498,15 @@ export default function AdminPanel({
     }
   }, [contactInfo]);
 
-
   useEffect(() => {
     setBtnAction(contactButtonSettings.action);
     setBtnLinkUrl(contactButtonSettings.linkUrl);
     setBtnLinkLabel(contactButtonSettings.linkLabel);
   }, [contactButtonSettings]);
 
-  // ============================================================
-  // ROLE HELPERS
-  // ============================================================
-  const getRoleDesc = (r: typeof currentRole) => {
-    switch (r) {
-      case "Owner":
-        return "Full Absolute Authority. Can edit all listings, popups, home layout components, and modify roles.";
-      case "Manager":
-        return "Elevated Operational Access. Can modify, add, or delete listings, blogs, and popup ads, but restricted from changing user accounts.";
-      case "Sales":
-        return "View-Only Permissions with customer message support. Cannot mutate layout variables or add inventory items.";
-    }
-  };
-
-  // ============================================================
-  // PROPERTY HANDLERS - FULLY FIXED WITH FIRESTORE DIRECT WRITE
-  // ============================================================
+  // ==================================================================
+  // PROPERTY HANDLERS
+  // ==================================================================
   const handleSaveProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) {
@@ -524,7 +514,6 @@ export default function AdminPanel({
       return;
     }
 
-    // Validate image sizes
     if (propImg && propImg.length > 1000000) {
       showAlert("Image Too Large", "The featured image is too large (>1MB). Please use a smaller image.");
       return;
@@ -703,9 +692,9 @@ export default function AdminPanel({
     );
   };
 
-  // ============================================================
+  // ==================================================================
   // BLOG HANDLERS
-  // ============================================================
+  // ==================================================================
   const handleSaveBlog = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
@@ -757,9 +746,9 @@ export default function AdminPanel({
     );
   };
 
-  // ============================================================
+  // ==================================================================
   // TESTIMONIAL HANDLERS
-  // ============================================================
+  // ==================================================================
   const handleSaveTestimonial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
@@ -805,9 +794,9 @@ export default function AdminPanel({
     );
   };
 
-  // ============================================================
+  // ==================================================================
   // ADS HANDLERS
-  // ============================================================
+  // ==================================================================
   const handleSaveAd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
@@ -870,9 +859,9 @@ export default function AdminPanel({
     );
   };
 
-  // ============================================================
+  // ==================================================================
   // MESSAGES HANDLERS
-  // ============================================================
+  // ==================================================================
   const changeMessageStatus = async (id: string, newStatus: "New" | "Replied" | "Closed") => {
     const message = messages.find(m => m.id === id);
     if (!message) return;
@@ -906,119 +895,91 @@ export default function AdminPanel({
     );
   };
 
-  // ============================================================
-  // HOME SETTINGS HANDLERS
-  // ============================================================
+  // ==================================================================
+  // HOME SETTINGS HANDLERS (SYNC TEAM MEMBERS ON SAVE)
+  // ==================================================================
   const handleUpdateHomeLayout = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!isOwner) {
-    showAlert(
-      "Permission Denied",
-      "Only the Owner can edit home settings."
-    );
-    return;
-  }
+    if (!isOwner) {
+      showAlert("Permission Denied", "Only the Owner can edit home settings.");
+      return;
+    }
 
-  setIsSavingHomeSettings(true);
+    setIsSavingHomeSettings(true);
 
-  try {
-    // ------------------------------------------------------------
-    // HOME SETTINGS
-    // ------------------------------------------------------------
-    setHomeSettings({
-      heroTitle: homeH1,
-      heroSubtitle: homeSub,
-      heroImage: homeImgUrl,
-      brandLogo: brandLogo,
-      brandFavicon: brandFavicon,
-    });
-
-    // ------------------------------------------------------------
-    // SOCIAL SETTINGS
-    // ------------------------------------------------------------
-    if (setGlobalSocials) {
-      setGlobalSocials({
-        twitter: socTwitter,
-        linkedin: socLinkedin,
-        telegram: socTelegram,
-        tiktok: socTiktok,
-        whatsapp: socWhatsapp,
-        facebook: socFacebook,
-        instagram: socInstagram,
+    try {
+      // Home Settings
+      setHomeSettings({
+        heroTitle: homeH1,
+        heroSubtitle: homeSub,
+        heroImage: homeImgUrl,
+        brandLogo: brandLogo,
+        brandFavicon: brandFavicon,
       });
-    }
 
-    // ------------------------------------------------------------
-    // CONTACT SETTINGS
-    // ------------------------------------------------------------
-    if (setContactInfo) {
-      setContactInfo({
-        email: contactEmail,
-        phone: contactPhone,
-        address: contactAddress,
-        hqAddress: contactHqAddress,
-        hotline: contactHotline,
-        diasporaHotline: contactDiasporaHotline,
+      // Social Settings
+      if (setGlobalSocials) {
+        setGlobalSocials({
+          twitter: socTwitter,
+          linkedin: socLinkedin,
+          telegram: socTelegram,
+          tiktok: socTiktok,
+          whatsapp: socWhatsapp,
+          facebook: socFacebook,
+          instagram: socInstagram,
+        });
+      }
+
+      // Contact Settings
+      if (setContactInfo) {
+        setContactInfo({
+          email: contactEmail,
+          phone: contactPhone,
+          address: contactAddress,
+          hqAddress: contactHqAddress,
+          hotline: contactHotline,
+          diasporaHotline: contactDiasporaHotline,
+        });
+      }
+
+      // ⭐ TEAM MEMBERS – ONLY SYNC ON SAVE
+      const cleanedTeam = (localTeam || []).map((member) => ({
+        id: member?.id || undefined,
+        name: member?.name || "",
+        role: member?.role || "",
+        desc: member?.desc || "",
+        img: member?.img || "",
+      }));
+
+      if (setTeamMembers) {
+        setTeamMembers(cleanedTeam);
+      }
+
+      // Contact Button
+      setContactButtonSettings({
+        action: btnAction,
+        linkUrl: btnLinkUrl,
+        linkLabel: btnLinkLabel,
       });
+
+      logActivity("system", "✅ Home settings and executive team roster updated by admin");
+
+      showAlert(
+        "✅ Settings Saved",
+        "All home screen, contact, button, and executive roster settings have been updated!"
+      );
+    } catch (error: any) {
+      console.error("Error saving home settings:", error);
+      showAlert("❌ Error", `Failed to save settings: ${error?.message || "Please try again."}`);
+    } finally {
+      setIsSavingHomeSettings(false);
     }
+  };
 
-    // ------------------------------------------------------------
-    // TEAM MEMBERS
-    //
-    // IMPORTANT:
-    // Save the complete roster INCLUDING img URLs.
-    // ------------------------------------------------------------
-   const cleanedTeam = (localTeam || []).map((member) => ({
-  id: member?.id || undefined,      // ← keep the id!
-  name: member?.name || "",
-  role: member?.role || "",
-  desc: member?.desc || "",
-  img: member?.img || "",
-}));
-
-    if (setTeamMembers) {
-      setTeamMembers(cleanedTeam);
-    }
-
-    // ------------------------------------------------------------
-    // CONTACT BUTTON
-    // ------------------------------------------------------------
-    setContactButtonSettings({
-      action: btnAction,
-      linkUrl: btnLinkUrl,
-      linkLabel: btnLinkLabel,
-    });
-
-    // ------------------------------------------------------------
-    // ACTIVITY LOG
-    // ------------------------------------------------------------
-    logActivity(
-      "system",
-      "✅ Home settings and executive team roster updated by admin"
-    );
-
-    showAlert(
-      "✅ Settings Saved",
-      "All home screen, contact, button, and executive roster settings have been updated!"
-    );
-  } catch (error: any) {
-    console.error("Error saving home settings:", error);
-
-    showAlert(
-      "❌ Error",
-      `Failed to save settings: ${
-        error?.message || "Please try again."
-      }`
-    );
-  } finally {
-    setIsSavingHomeSettings(false);
-  }
-};
-
-  // ============================================================
+  // ==================================================================
   // USER MANAGEMENT
-  // ============================================================
+  // ==================================================================
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isOwner) {
@@ -1156,9 +1117,9 @@ export default function AdminPanel({
     setUserRole("Sales");
   };
 
-  // ============================================================
+  // ==================================================================
   // PROJECTS HANDLERS
-  // ============================================================
+  // ==================================================================
   const handleSaveProjectLocal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEditCore) return;
@@ -1257,24 +1218,21 @@ export default function AdminPanel({
     setProjSpecs("14 Units / Multi-Bedroom Duplexes");
   };
 
-  // ============================================================
+  // ==================================================================
   // RESTORE ORIGINAL CONTENT
-  // ============================================================
+  // ==================================================================
   const handleRestoreOriginalContent = async () => {
     if (restoreOriginalWebsiteContent) {
       await restoreOriginalWebsiteContent();
     }
   };
 
-  // ============================================================
+  // ==================================================================
   // RENDER
-  // ============================================================
+  // ==================================================================
   return (
-    <div
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
-      id="admin-panel-container"
-    >
-      {/* Banner / Header */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="admin-panel-container">
+      {/* Header */}
       <div
         className={`p-6 rounded-2xl border mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 ${
           isDarkMode ? "bg-zinc-800 border-zinc-800" : "bg-zinc-100 border-zinc-200"
@@ -1304,9 +1262,9 @@ export default function AdminPanel({
         </div>
       </div>
 
-      {/* Internal Navigation Grid */}
+      {/* Navigation Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Tab Links Column */}
+        {/* Sidebar Navigation */}
         <div className="lg:col-span-3 flex flex-row lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
           {!isSales && (
             <button
@@ -1441,12 +1399,11 @@ export default function AdminPanel({
               Catalogs
             </button>
           )}
-
-         
         </div>
 
+        {/* Main Content */}
         <div className="lg:col-span-9 space-y-6">
-          {/* ==================== DASHBOARD ==================== */}
+          {/* DASHBOARD */}
           {activeAdminTab === "dashboard" && !isSales && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-4">
@@ -1455,8 +1412,7 @@ export default function AdminPanel({
                     Dashboard Overview
                   </h3>
                   <p className="text-sm text-zinc-600 dark:text-zinc-400 font-sans">
-                    Real-time metrics, property distribution, and recent
-                    activities.
+                    Real-time metrics, property distribution, and recent activities.
                   </p>
                 </div>
               </div>
@@ -1474,7 +1430,7 @@ export default function AdminPanel({
                   <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-2">
                     Assets Sold
                   </p>
-                  <p className="text-3xl font-bold font-sans tracking-tight text-black dark:text-zinc-100">
+                  <p className="text-3xl font-bold font-sans tracking-tight">
                     {properties.filter((p) => p.availability === "Sold").length}
                   </p>
                 </div>
@@ -1482,7 +1438,7 @@ export default function AdminPanel({
                   <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-2">
                     Reserved Assets
                   </p>
-                  <p className="text-3xl font-bold font-sans tracking-tight text-black dark:text-zinc-100">
+                  <p className="text-3xl font-bold font-sans tracking-tight">
                     {properties.filter((p) => p.availability === "Reserved").length}
                   </p>
                 </div>
@@ -1490,7 +1446,7 @@ export default function AdminPanel({
                   <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-2">
                     Available Properties
                   </p>
-                  <p className="text-3xl font-bold font-sans tracking-tight text-black dark:text-zinc-100">
+                  <p className="text-3xl font-bold font-sans tracking-tight">
                     {properties.filter((p) => p.availability === "Available").length}
                   </p>
                 </div>
@@ -1610,7 +1566,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* ==================== PROPERTIES ==================== */}
+          {/* PROPERTIES */}
           {activeAdminTab === "properties" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -2250,7 +2206,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* ==================== HOME SETTINGS ==================== */}
+          {/* HOME SETTINGS */}
           {activeAdminTab === "home" && isOwner && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               <form
@@ -2482,6 +2438,7 @@ export default function AdminPanel({
                   </div>
                 </div>
 
+                {/* ⭐ EXECUTIVE TEAM ROSTER – local state only, synced on Save */}
                 <div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
                   <div className="flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-800/80 pb-3">
                     <div className="p-2 bg-violet-50 dark:bg-violet-950/30 rounded-lg text-violet-600">
@@ -2506,37 +2463,37 @@ export default function AdminPanel({
                           <span className="text-[11px] font-bold uppercase tracking-widest text-[#DC2626]">
                             Executive Staff #{index + 1}
                           </span>
-                         <button
-  type="button"
-  onClick={() => {
-    const updated = localTeam.filter((_, idx) => idx !== index);
-    setLocalTeam(updated);
-    if (setTeamMembers) setTeamMembers(updated);
-  }}
-  className="..."
-  title="Remove Member"
->
-  <Trash2 className="w-3.5 h-3.5" />
-  <span>Remove Member</span>
-</button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = localTeam.filter((_, idx) => idx !== index);
+                              setLocalTeam(updated);
+                              // ⚠️ NOT syncing to parent here – only on Save
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/30 dark:hover:bg-red-950/50 dark:text-red-400 rounded-lg transition-all duration-150 cursor-pointer border border-[#FCA5A5]/20 dark:border-[#991B1B]/20"
+                            title="Remove Member"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove Member</span>
+                          </button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
                               Full Name
                             </label>
-                        <input
-  type="text"
-  value={member.name}
-  required
-  onChange={(e) => {
-    const updated = [...localTeam];
-    updated[index].name = e.target.value;
-    setLocalTeam(updated);
-    if (setTeamMembers) setTeamMembers(updated);
-  }}
-  className="..."
-/>
+                            <input
+                              type="text"
+                              value={member.name}
+                              required
+                              onChange={(e) => {
+                                const updated = [...localTeam];
+                                updated[index].name = e.target.value;
+                                setLocalTeam(updated);
+                                // ⚠️ NOT syncing to parent here – only on Save
+                              }}
+                              className="w-full p-2.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
+                            />
                           </div>
                           <div>
                             <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">
@@ -2550,45 +2507,43 @@ export default function AdminPanel({
                                 const updated = [...localTeam];
                                 updated[index].role = e.target.value;
                                 setLocalTeam(updated);
+                                // ⚠️ NOT syncing to parent here – only on Save
                               }}
                               className="w-full p-2.5 text-xs rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
                             />
                           </div>
                           <div className="md:col-span-2">
-                         <ImageInput
-  value={member.img || ""}
-  onChange={(val) => {
-    const updated = localTeam.map((teamMember, i) =>
-      i === index
-        ? { ...teamMember, img: val }
-        : teamMember
-    );
-    setLocalTeam(updated);
-    if (setTeamMembers) setTeamMembers(updated);
-  }}
-  label="Profile Portrait (Choose Device Image or Drag & Drop)"
-/>
+                            <ImageInput
+                              value={member.img || ""}
+                              onChange={(val) => {
+                                const updated = [...localTeam];
+                                updated[index].img = val;
+                                setLocalTeam(updated);
+                                // ⚠️ NOT syncing to parent here – only on Save
+                              }}
+                              label="Profile Portrait (Choose Device Image or Drag & Drop)"
+                            />
                           </div>
                         </div>
                       </div>
                     ))}
-                  <button
-  type="button"
-  onClick={() => {
-    const newMember = {
-      name: "New Executive Staff",
-      role: "Director of Operations",
-      desc: "Brings extensive project management and infrastructure delivery background in municipal sectors.",
-      img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
-    };
-    const updated = [...localTeam, newMember];
-    setLocalTeam(updated);
-    if (setTeamMembers) setTeamMembers(updated);
-  }}
-  className="..."
->
-  <span>+ Add New Team Member</span>
-</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newMember = {
+                          name: "New Executive Staff",
+                          role: "Director of Operations",
+                          desc: "Brings extensive project management and infrastructure delivery background in municipal sectors.",
+                          img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                        };
+                        const updated = [...localTeam, newMember];
+                        setLocalTeam(updated);
+                        // ⚠️ NOT syncing to parent here – only on Save
+                      }}
+                      className="w-full py-2.5 border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-red-700 dark:hover:border-red-500 rounded-xl text-xs font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-400 hover:text-red-700 transition-all flex items-center justify-center gap-2 cursor-pointer bg-transparent"
+                    >
+                      <span>+ Add New Team Member</span>
+                    </button>
                   </div>
 
                   <div className="p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-6">
@@ -2674,6 +2629,7 @@ export default function AdminPanel({
                 </div>
               </form>
 
+              {/* Preview Sidebar */}
               <div className="lg:col-span-4 sticky top-6 hidden lg:flex flex-col gap-6">
                 <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg overflow-hidden flex flex-col">
                   <div className="bg-zinc-100 dark:bg-zinc-900 px-4 py-2.5 border-b border-zinc-200 dark:border-zinc-800/80 flex items-center gap-2 flex-shrink-0">
@@ -2762,7 +2718,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* ==================== TESTIMONIALS ==================== */}
+          {/* TESTIMONIALS */}
           {activeAdminTab === "testimonials" && canEditCore && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -2771,8 +2727,7 @@ export default function AdminPanel({
                     Testimonial Feedback Grid
                   </h3>
                   <p className="text-xs text-zinc-700 dark:text-zinc-300">
-                    Order is strictly set: Client name first, then rating stars,
-                    then testimonial body text.
+                    Order is strictly set: Client name first, then rating stars, then testimonial body text.
                   </p>
                 </div>
                 <button
@@ -2909,7 +2864,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* ==================== BLOGS ==================== */}
+          {/* BLOGS */}
           {activeAdminTab === "blogs" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -3065,7 +3020,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* ==================== PROJECTS ==================== */}
+          {/* PROJECTS */}
           {activeAdminTab === "projects" && !isSales && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -3099,9 +3054,7 @@ export default function AdminPanel({
                   className="p-6 rounded-2xl border transition-all space-y-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-black dark:text-zinc-100"
                 >
                   <h4 className="font-sans font-extrabold uppercase tracking-tight text-sm pb-2 border-b leading-tight border-zinc-200 dark:border-zinc-800 text-black dark:text-zinc-100">
-                    {editingProjectId
-                      ? "✏️ Edit Project Showcase"
-                      : "🚀 Add New Completed Landmark"}
+                    {editingProjectId ? "✏️ Edit Project Showcase" : "🚀 Add New Completed Landmark"}
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -3208,9 +3161,7 @@ export default function AdminPanel({
                       type="submit"
                       className="px-5 py-2 rounded-lg text-xs font-bold bg-[#003B95] border border-[#003B95] hover:bg-[#002f75] text-black dark:text-zinc-100 cursor-pointer transition shadow-xs"
                     >
-                      {editingProjectId
-                        ? "Apply Permanent Changes"
-                        : "Publish Completed Project"}
+                      {editingProjectId ? "Apply Permanent Changes" : "Publish Completed Project"}
                     </button>
                   </div>
                 </form>
@@ -3277,7 +3228,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* ==================== ADS ==================== */}
+          {/* ADS */}
           {activeAdminTab === "ads" && canEditCore && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -3460,7 +3411,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* ==================== MESSAGES ==================== */}
+          {/* MESSAGES */}
           {activeAdminTab === "messages" && (
             <div className="space-y-6">
               <div>
@@ -3700,7 +3651,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* ==================== USERS ==================== */}
+          {/* USERS */}
           {activeAdminTab === "users" && canEditCore && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -3885,7 +3836,7 @@ export default function AdminPanel({
             </div>
           )}
 
-          {/* ==================== CATALOGS ==================== */}
+          {/* CATALOGS */}
           {activeAdminTab === "catalogs" && canEditCore && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-4 border-zinc-200 dark:border-zinc-800">
