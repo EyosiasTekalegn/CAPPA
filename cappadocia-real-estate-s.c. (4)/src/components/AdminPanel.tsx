@@ -1444,20 +1444,7 @@ useEffect(() => {
             </button>
           )}
 
-          {isOwner && (
-            <button
-              onClick={() => {
-                if (window.confirm("⚠️ This will restore all website content to the original default data. Continue?")) {
-                  handleRestoreOriginalContent();
-                }
-              }}
-              disabled={isRestoring}
-              className="text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-2.5 cursor-pointer flex-shrink-0 transition-all hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30 bg-white dark:bg-zinc-900"
-            >
-              <RefreshCw className={`w-4 h-4 ${isRestoring ? "animate-spin" : ""}`} />
-              {isRestoring ? "Restoring..." : "Restore Original"}
-            </button>
-          )}
+         
         </div>
 
         <div className="lg:col-span-9 space-y-6">
