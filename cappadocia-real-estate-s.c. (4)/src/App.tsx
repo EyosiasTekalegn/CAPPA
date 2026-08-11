@@ -103,6 +103,17 @@ export default function App() {
       diasporaHotline: '+1 (800) 490-CAP (Diaspora Hotline)'
     })
   );
+  const contact = {
+  ...{
+    phone: '+251 911 234567',
+    email: 'info@cappadocia.com',
+    address: 'Bole Road, Behind Atlas Hotel, Addis Ababa, Ethiopia',
+    hqAddress: 'Cappadocia Towers, Bole, Block 12, VIP Lane,\nAddis Ababa, Ethiopia',
+    hotline: '+251 911 385500 (Addis HQ)',
+    diasporaHotline: '+1 (800) 490-CAP (Diaspora Hotline)'
+  },
+  ...contactInfo
+};
 
   // ------------------------------------------------------------------
   // TEAM MEMBERS – now stored in a separate collection
