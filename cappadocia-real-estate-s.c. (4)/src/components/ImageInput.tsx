@@ -20,12 +20,11 @@ interface ImageInputProps {
 
 const DEFAULT_MAX_SIZE_MB = 10;
 
-// 🔥 HIGHER QUALITY: 800px, quality 0.85
 function compressImage(
   dataUrl: string,
-  maxWidth = 800,    // increased from 300
-  maxHeight = 800,   // increased from 300
-  quality = 0.85     // increased from 0.5
+  maxWidth = 800,
+  maxHeight = 800,
+  quality = 0.85
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -86,7 +85,6 @@ export function ImageInput({
       setIsProcessing(true);
 
       try {
-        // Single image mode (used for team members)
         if (!multiline) {
           const file = files[0];
           if (!file.type.startsWith("image/")) {
@@ -103,29 +101,19 @@ export function ImageInput({
             reader.readAsDataURL(file);
           });
 
-          // Compress with higher quality
           let finalData = await compressImage(dataUrl, 800, 800, 0.85);
-
-          // If still too large for Firestore (> 900 KB), try quality 0.7
           if (finalData.length / 1024 > 900) {
-            console.warn("Image >900KB, reducing quality to 0.7...");
             finalData = await compressImage(dataUrl, 800, 800, 0.7);
           }
-
-          // Final check: if still > 950 KB, reduce dimensions
           if (finalData.length / 1024 > 950) {
-            console.warn("Image still >950KB, reducing to 600px...");
             finalData = await compressImage(dataUrl, 600, 600, 0.7);
           }
-
-          console.log(`✅ Image processed: ${(finalData.length / 1024).toFixed(1)} KB`);
 
           setPreviewUrl(finalData);
           onChange(finalData);
           return;
         }
 
-        // Multiple images (gallery)
         const existingUrls = value
           ? value.split("\n").map((u) => u.trim()).filter(Boolean)
           : [];
